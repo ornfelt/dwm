@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-int
-main()
+int main()
 {
     char s[1000];
     int i, alphabets=0, digits=0, specialchars=0;

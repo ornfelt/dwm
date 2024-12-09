@@ -1,14 +1,10 @@
 /* See LICENSE file for copyright and license details. */
 
 /* Constants */
-/* #define TERMINAL "st" */
-/* #define TERMCLASS "St" */
+#define TERMINAL "st"
+#define TERMCLASS "St"
 /* #define TERMINAL "urxvt" */
 /* #define TERMCLASS "Urxvt" */
-/* #define TERMINAL "alacritty" */
-/* #define TERMCLASS "alacritty" */
-#define TERMINAL "wezterm"
-#define TERMCLASS "wezterm"
 
 /* appearance */
 static unsigned int borderpx    = 3;        /* border pixel of windows */
@@ -70,7 +66,7 @@ static const Rule rules[] = {
      *    WM_NAME(STRING) = title
      */
     /* class        instance                title               tags mask       isfloating   isterminal noswallow   monitor */
-    /* { "Gimp",       NULL,                   NULL,               1 << 8,         0,           0,         0,          -1 }, */
+    { "Gimp",       NULL,                   NULL,               1 << 8,         0,           0,         0,          -1 },
     { TERMCLASS,    NULL,                   NULL,               0,              0,           1,         0,          -1 },
     { NULL,         NULL,                   "Event Tester",     0,              0,           0,         1,          -1 },
     { NULL,         "spterm",               NULL,               SPTAG(0),       1,           1,         1,          -1 },
@@ -203,7 +199,7 @@ static const Key keys[] = {
         /* { MODKEY,                   XK_Tab,             view,               {0} }, */
         /* { MODKEY,                   XK_Tab,             view,               {0} }, */
         { MODKEY,                   XK_q,               killclient,         {0} },
-        { MODKEY|ShiftMask,         XK_p,               togglebar,          {0} },
+        { MODKEY|ShiftMask,         XK_p,               togglebars,         {0} },
         { MODKEY|ControlMask|ShiftMask,     XK_p,       togglebar,          {0} },
         { MODKEY,                   XK_h,               focusmon,           { .i = -1 } },
         { MODKEY|ShiftMask,         XK_h,               tagmonview,         { .i = -1 } },
@@ -228,7 +224,7 @@ static const Key keys[] = {
         { MODKEY|ShiftMask,         XK_s,               spawn,              SHCMD("import png:- | xclip -selection clipboard -t image/png") },
         { MODKEY|ControlMask,       XK_s,               spawn,              SHCMD("~/.local/bin/my_scripts/tesseract_ocr.sh") },
         { MODKEY,                   XK_d,               spawn,              SHCMD("rofi -show run -theme ~/.config/rofi/themes/gruvbox/gruvbox-dark.rasi") },
-        { MODKEY,                   XK_r,               spawn,              SHCMD("dmenu_run -i -l 20") },
+        { MODKEY,                   XK_r,               spawn,              SHCMD("dmenu_run -fn 'Linux Libertine Mono'") },
         { MODKEY|ShiftMask,         XK_r,               spawn,              SHCMD("rofi -show run -theme ~/.config/polybar/forest/scripts/rofi/launcher.rasi") },
         { MODKEY,                   XK_t,               spawn,              SHCMD("~/.local/bin/my_scripts/script_copy.sh") },
         { MODKEY|ShiftMask,         XK_t,               spawn,              SHCMD("~/.local/bin/my_scripts/script_helper.sh " TERMINAL) },
@@ -335,7 +331,7 @@ static const Button buttons[] = {
     { ClkStatusText,        0,              Button5,        sigdwmblocks,   {.i = 5} },
     { ClkStatusText,        ShiftMask,      Button1,        sigdwmblocks,   {.i = 6} },
 #endif
-    { ClkStatusText,        ShiftMask,      Button3,        spawn,          SHCMD(TERMINAL " -e nvim ~/.config/dwmblocks/config.h") },
+    { ClkStatusText,        ShiftMask,      Button3,        spawn,          SHCMD(TERMINAL " -e nvim ~/.config/dwm_mul_mon/dwmblocks/config.h") },
     { ClkClientWin,         MODKEY,         Button1,        movemouse,      {0} },
     { ClkClientWin,         MODKEY,         Button2,        defaultgaps,    {0} },
     { ClkClientWin,         MODKEY,         Button3,        resizemouse,    {0} },
