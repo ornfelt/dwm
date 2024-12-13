@@ -44,8 +44,8 @@ download_if_not_exists https://dwm.suckless.org/patches/actualfullscreen/dwm-act
 download_if_not_exists https://dwm.suckless.org/patches/tagshift/dwm-tagshift-6.3.diff
 
 # https://dwm.suckless.org/patches/statuscmd/
-#download_if_not_exists https://dwm.suckless.org/patches/statuscmd/dwm-statuscmd-status2d-20210405-60bb3df.diff
-download_if_not_exists https://dwm.suckless.org/patches/statuscmd/dwm-statuscmd-20241009-8933ebc.diff
+#download_if_not_exists https://dwm.suckless.org/patches/statuscmd/dwm-statuscmd-20241009-8933ebc.diff
+download_if_not_exists https://dwm.suckless.org/patches/statuscmd/dwm-statuscmd-status2d-20210405-60bb3df.diff
 
 # https://dwm.suckless.org/patches/swallow/
 download_if_not_exists https://dwm.suckless.org/patches/swallow/dwm-swallow-6.3.diff
