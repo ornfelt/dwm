@@ -69,7 +69,10 @@ download_if_not_exists https://dwm.suckless.org/patches/vanitygaps/dwm-cfacts-va
 download_if_not_exists https://dwm.suckless.org/patches/autostart/dwm-autostart-20210120-cb3f58a.diff
 
 # https://dwm.suckless.org/patches/scratchpad/
-download_if_not_exists https://dwm.suckless.org/patches/scratchpad/dwm-scratchpad-20240321-061e9fe.diff
+#download_if_not_exists https://dwm.suckless.org/patches/scratchpad/dwm-scratchpad-20240321-061e9fe.diff
+
+#https://dwm.suckless.org/patches/scratchpads/
+download_if_not_exists https://dwm.suckless.org/patches/scratchpads/dwm-scratchpads-20200414-728d397b.diff
 
 # https://dwm.suckless.org/patches/focusonclick/
 download_if_not_exists https://dwm.suckless.org/patches/focusonclick/dwm-focusonclick-20200110-61bb8b2.diff
