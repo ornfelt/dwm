@@ -238,6 +238,7 @@ static void runautostart(void);
 static void scan(void);
 static int sendevent(Client *c, Atom proto);
 static void sendmon(Client *c, Monitor *m);
+static void sendmonview(Client *c, Monitor *m);
 static void setclientstate(Client *c, long state);
 static void setfocus(Client *c);
 static void setfullscreen(Client *c, int fullscreen);
@@ -254,7 +255,9 @@ static void sigstatusbar(const Arg *arg);
 static void spawn(const Arg *arg);
 static int stackpos(const Arg *arg);
 static void tag(const Arg *arg);
+static void tagview(const Arg *arg);
 static void tagmon(const Arg *arg);
+static void tagmonview(const Arg *arg);
 static void togglebar(const Arg *arg);
 static void togglefloating(const Arg *arg);
 static void togglescratch(const Arg *arg);
@@ -855,116 +858,125 @@ dirtomon(int dir)
 }
 
 int
-drawstatusbar(Monitor *m, int bh, char* stext) {
-	int ret, i, j, w, x, len;
-	short isCode = 0;
-	char *text;
-	char *p;
+drawstatusbar(Monitor *m, int bh, char* stext)
+{
+    int ret, i, w, x, len;
+    short isCode = 0;
+    char *text;
+    char *p;
+    FILE *ptr;
+    char ch;
+    int hotbool = 0;
 
-	len = strlen(stext) + 1 ;
-	if (!(text = (char*) malloc(sizeof(char)*len)))
-		die("malloc");
-	p = text;
+    len = strlen(stext) + 1 ;
+    if (!(text = (char*) malloc(sizeof(char)*len)))
+        die("malloc");
+    p = text;
+    memcpy(text, stext, len);
 
-	i = -1, j = 0;
-	while (stext[++i])
-		if ((unsigned char)stext[i] >= ' ')
-			text[j++] = stext[i];
-	text[j] = '\0';
+    /* compute width of the status text */
+    w = 0;
+    i = -1;
+    while (text[++i]) {
+        if (text[i] == '^') {
+            if (!isCode) {
+                isCode = 1;
+                text[i] = '\0';
+                w += TEXTW(text) - lrpad;
+                text[i] = '^';
+                if (text[++i] == 'f')
+                    w += atoi(text + ++i);
+            } else {
+                isCode = 0;
+                text = text + i + 1;
+                i = -1;
+            }
+        }
+    }
+    if (!isCode)
+        w += TEXTW(text) - lrpad;
+    else
+        isCode = 0;
+    text = p;
 
-	/* compute width of the status text */
-	w = 0;
-	i = -1;
-	while (text[++i]) {
-		if (text[i] == '^') {
-			if (!isCode) {
-				isCode = 1;
-				text[i] = '\0';
-				w += TEXTW(text) - lrpad;
-				text[i] = '^';
-				if (text[++i] == 'f')
-					w += atoi(text + ++i);
-			} else {
-				isCode = 0;
-				text = text + i + 1;
-				i = -1;
-			}
-		}
-	}
-	if (!isCode)
-		w += TEXTW(text) - lrpad;
-	else
-		isCode = 0;
-	text = p;
+    w += 2; /* 1px padding on both sides */
+    ret = x = m->ww - w;
 
-	w += 2; /* 1px padding on both sides */
-	ret = x = m->ww - w;
+    drw_setscheme(drw, scheme[LENGTH(colors)]);
+    drw->scheme[ColFg] = scheme[SchemeNorm][ColFg];
+    drw->scheme[ColBg] = scheme[SchemeNorm][ColBg];
+    drw_rect(drw, x, 0, w, bh, 1, 1);
+    x++;
 
-	drw_setscheme(drw, scheme[LENGTH(colors)]);
-	drw->scheme[ColFg] = scheme[SchemeNorm][ColFg];
-	drw->scheme[ColBg] = scheme[SchemeNorm][ColBg];
-	drw_rect(drw, x, 0, w, bh, 1, 1);
-	x++;
+    /* process status text */
+    i = -1;
+    drw_clr_create(drw, &drw->scheme[ColFg], col1);
 
-	/* process status text */
-	i = -1;
-	while (text[++i]) {
-		if (text[i] == '^' && !isCode) {
-			isCode = 1;
+    while (text[++i]) {
+        if (text[i] == '^' && !isCode) {
+            isCode = 1;
 
-			text[i] = '\0';
-			w = TEXTW(text) - lrpad;
-			drw_text(drw, x, 0, w, bh, 0, text, 0);
+            text[i] = '\0';
+            w = TEXTW(text) - lrpad;
+            drw_text(drw, x, 0, w, bh, 0, text, 0);
+            x += w;
 
-			x += w;
+            while (text[++i] != '^') {
+                if (text[i] == '2') {
+                    // Check if weather is hot or not
+                    ptr = fopen("/home/jonas/.local/share/weatherreport", "r");
+                    if (ptr == NULL) printf("Fail to read wr...");
+                    do{
+                        ch = fgetc(ptr);
+                        // Check if temp is above +20 (= hot)
+                        if (hotbool){
+                            if ((ch == '2' || ch == '3') && fgetc(ptr) <= '9'){
+                                drw_clr_create(drw, &drw->scheme[ColFg], col21);
+                                break;
+                            }else{
+                                drw_clr_create(drw, &drw->scheme[ColFg], col22);
+                                break;
+                            }
+                        }
 
-			/* process code */
-			while (text[++i] != '^') {
-				if (text[i] == 'c') {
-					char buf[8];
-					memcpy(buf, (char*)text+i+1, 7);
-					buf[7] = '\0';
-					drw_clr_create(drw, &drw->scheme[ColFg], buf);
-					i += 7;
-				} else if (text[i] == 'b') {
-					char buf[8];
-					memcpy(buf, (char*)text+i+1, 7);
-					buf[7] = '\0';
-					drw_clr_create(drw, &drw->scheme[ColBg], buf);
-					i += 7;
-				} else if (text[i] == 'd') {
-					drw->scheme[ColFg] = scheme[SchemeNorm][ColFg];
-					drw->scheme[ColBg] = scheme[SchemeNorm][ColBg];
-				} else if (text[i] == 'r') {
-					int rx = atoi(text + ++i);
-					while (text[++i] != ',');
-					int ry = atoi(text + ++i);
-					while (text[++i] != ',');
-					int rw = atoi(text + ++i);
-					while (text[++i] != ',');
-					int rh = atoi(text + ++i);
+                        if (ch == '+'){
+                            hotbool = 1;
+                        }else if (ch == '-') {
+                            drw_clr_create(drw, &drw->scheme[ColFg], col23);
+                            break;
+                        }
+                        else{
+                            drw_clr_create(drw, &drw->scheme[ColFg], col24);
+                            break;
+                        }
+                    } while (ch != EOF);
+                    fclose(ptr);
+                } else if (text[i] == '3') {
+                    drw_clr_create(drw, &drw->scheme[ColFg], col3);
+                } else if (text[i] == '4') {
+                    drw_clr_create(drw, &drw->scheme[ColFg], col4);
+                } else if (text[i] == '5') {
+                    drw_clr_create(drw, &drw->scheme[ColFg], col5);
+                } else if (text[i] == '6') {
+                    drw_clr_create(drw, &drw->scheme[ColFg], col6);
+                }
+            }
 
-					drw_rect(drw, rx + x, ry, rw, rh, 1, 0);
-				} else if (text[i] == 'f') {
-					x += atoi(text + ++i);
-				}
-			}
+            text = text + i + 1;
+            i=-1;
+            isCode = 0;
+        }
+    }
 
-			text = text + i + 1;
-			i=-1;
-			isCode = 0;
-		}
-	}
+    if (!isCode) {
+        w = TEXTW(text) - lrpad;
+        drw_text(drw, x, 0, w, bh, 0, text, 0);
+    }
 
-	if (!isCode) {
-		w = TEXTW(text) - lrpad;
-		drw_text(drw, x, 0, w, bh, 0, text, 0);
-	}
+    drw_setscheme(drw, scheme[SchemeNorm]);
+    free(p);
 
-	drw_setscheme(drw, scheme[SchemeNorm]);
-	free(p);
-
-	return ret;
+    return ret;
 }
 
 void
@@ -980,7 +992,8 @@ drawbar(Monitor *m)
 		return;
 
 	/* draw status first so it can be overdrawn by tags later */
-	if (m == selmon) { /* status is only drawn on selected monitor */
+	//if (m == selmon) { /* status is only drawn on selected monitor */
+    if (m == selmon || 1) { 
 		tw = statusw = m->ww - drawstatusbar(m, bh, stext);
 	}
 
@@ -1665,81 +1678,87 @@ run(void)
 			handler[ev.type](&ev); /* call handler */
 }
 
+//void
+//runautostart(void)
+//{
+//	char *pathpfx;
+//	char *path;
+//	char *xdgdatahome;
+//	char *home;
+//	struct stat sb;
+//
+//	if ((home = getenv("HOME")) == NULL)
+//		/* this is almost impossible */
+//		return;
+//
+//	/* if $XDG_DATA_HOME is set and not empty, use $XDG_DATA_HOME/dwm,
+//	 * otherwise use ~/.local/share/dwm as autostart script directory
+//	 */
+//	xdgdatahome = getenv("XDG_DATA_HOME");
+//	if (xdgdatahome != NULL && *xdgdatahome != '\0') {
+//		/* space for path segments, separators and nul */
+//		pathpfx = ecalloc(1, strlen(xdgdatahome) + strlen(dwmdir) + 2);
+//
+//		if (sprintf(pathpfx, "%s/%s", xdgdatahome, dwmdir) <= 0) {
+//			free(pathpfx);
+//			return;
+//		}
+//	} else {
+//		/* space for path segments, separators and nul */
+//		pathpfx = ecalloc(1, strlen(home) + strlen(localshare)
+//		                     + strlen(dwmdir) + 3);
+//
+//		if (sprintf(pathpfx, "%s/%s/%s", home, localshare, dwmdir) < 0) {
+//			free(pathpfx);
+//			return;
+//		}
+//	}
+//
+//	/* check if the autostart script directory exists */
+//	if (! (stat(pathpfx, &sb) == 0 && S_ISDIR(sb.st_mode))) {
+//		/* the XDG conformant path does not exist or is no directory
+//		 * so we try ~/.dwm instead
+//		 */
+//		char *pathpfx_new = realloc(pathpfx, strlen(home) + strlen(dwmdir) + 3);
+//		if(pathpfx_new == NULL) {
+//			free(pathpfx);
+//			return;
+//		}
+//		pathpfx = pathpfx_new;
+//
+//		if (sprintf(pathpfx, "%s/.%s", home, dwmdir) <= 0) {
+//			free(pathpfx);
+//			return;
+//		}
+//	}
+//
+//	/* try the blocking script first */
+//	path = ecalloc(1, strlen(pathpfx) + strlen(autostartblocksh) + 2);
+//	if (sprintf(path, "%s/%s", pathpfx, autostartblocksh) <= 0) {
+//		free(path);
+//		free(pathpfx);
+//	}
+//
+//	if (access(path, X_OK) == 0)
+//		system(path);
+//
+//	/* now the non-blocking script */
+//	if (sprintf(path, "%s/%s", pathpfx, autostartsh) <= 0) {
+//		free(path);
+//		free(pathpfx);
+//	}
+//
+//	if (access(path, X_OK) == 0)
+//		system(strcat(path, " &"));
+//
+//	free(pathpfx);
+//	free(path);
+//}
+
 void
 runautostart(void)
 {
-	char *pathpfx;
-	char *path;
-	char *xdgdatahome;
-	char *home;
-	struct stat sb;
-
-	if ((home = getenv("HOME")) == NULL)
-		/* this is almost impossible */
-		return;
-
-	/* if $XDG_DATA_HOME is set and not empty, use $XDG_DATA_HOME/dwm,
-	 * otherwise use ~/.local/share/dwm as autostart script directory
-	 */
-	xdgdatahome = getenv("XDG_DATA_HOME");
-	if (xdgdatahome != NULL && *xdgdatahome != '\0') {
-		/* space for path segments, separators and nul */
-		pathpfx = ecalloc(1, strlen(xdgdatahome) + strlen(dwmdir) + 2);
-
-		if (sprintf(pathpfx, "%s/%s", xdgdatahome, dwmdir) <= 0) {
-			free(pathpfx);
-			return;
-		}
-	} else {
-		/* space for path segments, separators and nul */
-		pathpfx = ecalloc(1, strlen(home) + strlen(localshare)
-		                     + strlen(dwmdir) + 3);
-
-		if (sprintf(pathpfx, "%s/%s/%s", home, localshare, dwmdir) < 0) {
-			free(pathpfx);
-			return;
-		}
-	}
-
-	/* check if the autostart script directory exists */
-	if (! (stat(pathpfx, &sb) == 0 && S_ISDIR(sb.st_mode))) {
-		/* the XDG conformant path does not exist or is no directory
-		 * so we try ~/.dwm instead
-		 */
-		char *pathpfx_new = realloc(pathpfx, strlen(home) + strlen(dwmdir) + 3);
-		if(pathpfx_new == NULL) {
-			free(pathpfx);
-			return;
-		}
-		pathpfx = pathpfx_new;
-
-		if (sprintf(pathpfx, "%s/.%s", home, dwmdir) <= 0) {
-			free(pathpfx);
-			return;
-		}
-	}
-
-	/* try the blocking script first */
-	path = ecalloc(1, strlen(pathpfx) + strlen(autostartblocksh) + 2);
-	if (sprintf(path, "%s/%s", pathpfx, autostartblocksh) <= 0) {
-		free(path);
-		free(pathpfx);
-	}
-
-	if (access(path, X_OK) == 0)
-		system(path);
-
-	/* now the non-blocking script */
-	if (sprintf(path, "%s/%s", pathpfx, autostartsh) <= 0) {
-		free(path);
-		free(pathpfx);
-	}
-
-	if (access(path, X_OK) == 0)
-		system(strcat(path, " &"));
-
-	free(pathpfx);
-	free(path);
+    system("killall -q dwmblocks; dwmblocks &");
 }
 
 void
@@ -1783,6 +1802,25 @@ sendmon(Client *c, Monitor *m)
 	attachstack(c);
 	focus(NULL);
 	arrange(NULL);
+}
+
+void
+sendmonview(Client *c, Monitor *m)
+{
+    if (c->mon == m)
+        return;
+    unfocus(c, 1);
+    detach(c);
+    detachstack(c);
+    arrange(c->mon);
+    c->mon = m;
+    c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
+    attach(c);
+    attachstack(c);
+    XWarpPointer(dpy, None, m->barwin, 0, 0, 0, 0, m->mw / 2, m->mh / 2);
+    arrange(m);
+    focus(c);
+    restack(m);
 }
 
 void
@@ -2148,11 +2186,30 @@ tag(const Arg *arg)
 }
 
 void
+tagview(const Arg *arg)
+{
+    if (selmon->sel && arg->ui & TAGMASK) {
+        selmon->sel->tags = arg->ui & TAGMASK;
+        focus(NULL);
+        arrange(selmon);
+        view(arg);
+    }
+}
+
+void
 tagmon(const Arg *arg)
 {
 	if (!selmon->sel || !mons->next)
 		return;
 	sendmon(selmon->sel, dirtomon(arg->i));
+}
+
+void
+tagmonview(const Arg *arg)
+{
+    if (!selmon->sel || !mons->next)
+        return;
+    sendmonview(selmon->sel, dirtomon(arg->i));
 }
 
 void
@@ -2566,8 +2623,11 @@ updatewmhints(Client *c)
 void
 view(const Arg *arg)
 {
-	if ((arg->ui & TAGMASK) == selmon->tagset[selmon->seltags])
-		return;
+    if ((arg->ui & TAGMASK) == selmon->tagset[selmon->seltags]) {
+        view(&((Arg) { .ui = 0 }));
+        return;
+    }
+
 	selmon->seltags ^= 1; /* toggle sel tagset */
 	if (arg->ui & TAGMASK)
 		selmon->tagset[selmon->seltags] = arg->ui & TAGMASK;
@@ -2860,6 +2920,7 @@ main(int argc, char *argv[])
 #endif /* __OpenBSD__ */
 	scan();
 	runautostart();
+    arrange(selmon);
 	run();
 	cleanup();
 	XCloseDisplay(dpy);
