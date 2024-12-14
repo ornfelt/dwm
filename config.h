@@ -214,7 +214,7 @@ static const Key keys[] = {
         /* { MODKEY,                   XK_Tab,             view,               {0} }, */
         /* { MODKEY,                   XK_Tab,             view,               {0} }, */
         { MODKEY,                   XK_q,               killclient,         {0} },
-        { MODKEY|ShiftMask,         XK_p,               togglebar,          {0} },
+        { MODKEY|ShiftMask,         XK_p,               togglebars,          {0} },
         { MODKEY|ControlMask|ShiftMask,     XK_p,       togglebar,          {0} },
         { MODKEY,                   XK_h,               focusmon,           { .i = -1 } },
         { MODKEY|ShiftMask,         XK_h,               tagmonview,         { .i = -1 } },

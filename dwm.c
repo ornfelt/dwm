@@ -200,6 +200,7 @@ static void destroynotify(XEvent *e);
 static void detach(Client *c);
 static void detachstack(Client *c);
 static Monitor *dirtomon(int dir);
+static Monitor *numtomon(int num);
 static void drawbar(Monitor *m);
 static void drawbars(void);
 static int drawstatusbar(Monitor *m, int bh, char* text);
@@ -207,6 +208,7 @@ static void expose(XEvent *e);
 static void focus(Client *c);
 static void focusin(XEvent *e);
 static void focusmon(const Arg *arg);
+static void focusnthmon(const Arg *arg);
 static void focusstack(const Arg *arg);
 static Atom getatomprop(Client *c, Atom prop);
 static int getrootptr(int *x, int *y);
@@ -258,7 +260,12 @@ static void tag(const Arg *arg);
 static void tagview(const Arg *arg);
 static void tagmon(const Arg *arg);
 static void tagmonview(const Arg *arg);
+static void tagnextmon(const Arg *arg);
+static void tagnewmon(const Arg *arg);
+static void tagnthmon(const Arg *arg);
+static void tagnthmonview(const Arg *arg);
 static void togglebar(const Arg *arg);
+static void togglebars(const Arg *arg);
 static void togglefloating(const Arg *arg);
 static void togglescratch(const Arg *arg);
 static void togglesticky(const Arg *arg);
@@ -791,7 +798,10 @@ createmon(void)
 	Monitor *m;
 
 	m = ecalloc(1, sizeof(Monitor));
-	m->tagset[0] = m->tagset[1] = 1;
+    if (mons)
+        m->tagset[0] = m->tagset[1] = 2;
+    else
+        m->tagset[0] = m->tagset[1] = 1;
 	m->mfact = mfact;
 	m->nmaster = nmaster;
 	m->showbar = showbar;
@@ -855,6 +865,17 @@ dirtomon(int dir)
 	else
 		for (m = mons; m->next != selmon; m = m->next);
 	return m;
+}
+
+Monitor *
+numtomon(int num)
+{
+    Monitor *m = NULL;
+    int i = 0;
+
+    for(m = mons, i=0; m->next && i < num; m = m->next)
+        i++;
+    return m;
 }
 
 int
@@ -1089,6 +1110,22 @@ focusmon(const Arg *arg)
 	unfocus(selmon->sel, 0);
 	selmon = m;
 	focus(NULL);
+}
+
+void
+focusnthmon(const Arg *arg)
+{
+    Monitor *m;
+
+    if (!mons->next)
+        return;
+
+    if ((m = numtomon(arg->i)) == selmon)
+        return;
+    unfocus(selmon->sel, 0);
+    XWarpPointer(dpy, None, m->barwin, 0, 0, 0, 0, m->mw / 2, m->mh / 2);
+    selmon = m;
+    focus(NULL);
 }
 
 void
@@ -2175,20 +2212,76 @@ stackpos(const Arg *arg) {
 		return arg->i;
 }
 
+//void
+//tag(const Arg *arg)
+//{
+//    if (selmon->sel && arg->ui & TAGMASK) {
+//        if (mons && mons->next) {
+//            // Moving to even tag, selected mon != first mon
+//            if ((arg->ui & 341) == 0 && selmon != mons) {
+//                selmon->sel->tags = arg->ui & TAGMASK;
+//                focus(NULL);
+//                arrange(selmon);
+//                // Moving to odd tag, selected mon == first mon
+//            } else if ((arg->ui & 341) > 0 && selmon == mons) {
+//                selmon->sel->tags = arg->ui & TAGMASK;
+//                focus(NULL);
+//                arrange(selmon);
+//            } else {
+//                tagnextmon(arg);
+//            }
+//        } else {
+//            if (selmon->sel && arg->ui & TAGMASK) {
+//                selmon->sel->tags = arg->ui & TAGMASK;
+//                focus(NULL);
+//                arrange(selmon);
+//            }
+//        }
+//    }
+//}
+
 void
 tag(const Arg *arg)
 {
-	if (selmon->sel && arg->ui & TAGMASK) {
-		selmon->sel->tags = arg->ui & TAGMASK;
-		focus(NULL);
-		arrange(selmon);
-	}
+    if (!(selmon->sel && arg->ui & TAGMASK))
+        return;
+
+    if (mons && mons->next) {
+        // Moving to even tag, selected mon != first mon
+        if ((arg->ui & 341) == 0 && selmon != mons) {
+            selmon->sel->tags = arg->ui & TAGMASK;
+        }
+        // Moving to odd tag, selected mon == first mon
+        else if ((arg->ui & 341) > 0 && selmon == mons) {
+            selmon->sel->tags = arg->ui & TAGMASK;
+        } else {
+            tagnextmon(arg);
+            return;
+        }
+    } else {
+        selmon->sel->tags = arg->ui & TAGMASK;
+    }
+
+    focus(NULL);
+    arrange(selmon);
 }
 
 void
 tagview(const Arg *arg)
 {
     if (selmon->sel && arg->ui & TAGMASK) {
+        if (mons && mons->next) {
+            // If first monitor and moving to even tag (second mon)
+            if ((arg->ui & 341) == 0 && selmon == mons) {
+                tagnthmonview(&((Arg) { .i = 1 }));
+                tagnewmon(arg);
+                return;
+            } else if ((arg->ui & 341) > 0 && selmon != mons) {
+                tagnthmonview(&((Arg) { .i = 0 }));
+                tagnewmon(arg);
+                return;
+            }
+        }
         selmon->sel->tags = arg->ui & TAGMASK;
         focus(NULL);
         arrange(selmon);
@@ -2213,12 +2306,69 @@ tagmonview(const Arg *arg)
 }
 
 void
+tagnextmon(const Arg *arg)
+{
+    Client *sel;
+    Monitor *newmon;
+
+    if (!selmon->sel || !mons->next)
+        return;
+    sel = selmon->sel;
+    newmon = dirtomon(1);
+    sendmon(sel, newmon);
+    if (sel && arg->ui & TAGMASK) {
+        sel->tags = arg->ui & TAGMASK;
+        focus(NULL);
+        arrange(newmon);
+    }
+}
+
+void
+tagnewmon(const Arg *arg)
+{
+    if (selmon->sel && arg->ui & TAGMASK) {
+        selmon->sel->tags = arg->ui & TAGMASK;
+        focus(NULL);
+        arrange(selmon);
+        view(arg);
+    }
+}
+
+void
+tagnthmon(const Arg *arg)
+{
+    if (!selmon->sel || !mons->next)
+        return;
+    sendmon(selmon->sel, numtomon(arg->i));
+}
+
+void
+tagnthmonview(const Arg *arg)
+{
+    if (!selmon->sel || !mons->next)
+        return;
+    sendmonview(selmon->sel, numtomon(arg->i));
+}
+
+void
 togglebar(const Arg *arg)
 {
 	selmon->showbar = !selmon->showbar;
 	updatebarpos(selmon);
 	XMoveResizeWindow(dpy, selmon->barwin, selmon->wx, selmon->by, selmon->ww, bh);
 	arrange(selmon);
+}
+
+void
+togglebars(const Arg *arg)
+{
+    Monitor *m;
+    for (m = mons; m; m = m->next) {
+        m->showbar = !m->showbar;
+        updatebarpos(m);
+        XMoveResizeWindow(dpy, m->barwin, m->wx, m->by, m->ww, bh);
+        arrange(m);
+    }
 }
 
 void
@@ -2623,16 +2773,27 @@ updatewmhints(Client *c)
 void
 view(const Arg *arg)
 {
-    if ((arg->ui & TAGMASK) == selmon->tagset[selmon->seltags]) {
-        view(&((Arg) { .ui = 0 }));
-        return;
+    if (mons && mons->next) {
+        if ((arg->ui & TAGMASK) == selmon->tagset[selmon->seltags])
+            return;
+
+        // GENIUS 101010101
+        if ((arg->ui & 341) == 0)
+            focusnthmon(&((Arg) { .i = 1 }));
+        else
+            focusnthmon(&((Arg) { .i = 0 }));
+    } else {
+        if ((arg->ui & TAGMASK) == selmon->tagset[selmon->seltags]) { 
+            view(&((Arg) { .ui = 0 })); 
+            return; 
+        } 
     }
 
-	selmon->seltags ^= 1; /* toggle sel tagset */
-	if (arg->ui & TAGMASK)
-		selmon->tagset[selmon->seltags] = arg->ui & TAGMASK;
-	focus(NULL);
-	arrange(selmon);
+    selmon->seltags ^= 1; /* toggle sel tagset */
+    if (arg->ui & TAGMASK)
+        selmon->tagset[selmon->seltags] = arg->ui & TAGMASK;
+    focus(NULL);
+    arrange(selmon);
 }
 
 pid_t
