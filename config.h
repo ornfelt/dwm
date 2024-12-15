@@ -209,8 +209,8 @@ static const Key keys[] = {
         { MODKEY,                   XK_minus,           incrgaps,           {.i = -3 } },
         { MODKEY|ShiftMask,         XK_plus,            incrgaps,           {.i = +1 } },
         { MODKEY|ShiftMask,         XK_minus,           incrgaps,           {.i = -1 } },
-        { MODKEY1,                  XK_Tab,             shiftview,          { .i = +1 } },
-        { MODKEY1|ShiftMask,        XK_Tab,             shiftview,          { .i = -1 } },
+        { MODKEY1,                  XK_Tab,             shiftviewclients,          { .i = +1 } },
+        { MODKEY1|ShiftMask,        XK_Tab,             shiftviewclients,          { .i = -1 } },
         /* { MODKEY,                   XK_Tab,             view,               {0} }, */
         /* { MODKEY,                   XK_Tab,             view,               {0} }, */
         { MODKEY,                   XK_q,               killclient,         {0} },
