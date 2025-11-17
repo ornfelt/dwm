@@ -78,6 +78,17 @@ index 3d14213..303596c 100644
          { MODKEY|ControlMask|ShiftMask,     XK_p,       togglebar,          {0} },
          { MODKEY,                   XK_h,               focusmon,           { .i = -1 } },
          { MODKEY|ShiftMask,         XK_h,               tagmonview,         { .i = -1 } },
+diff --git a/config.mk b/config.mk
+index a933c0b..93f9739 100644
+--- a/config.mk
++++ b/config.mk
+@@ -1,5 +1,5 @@
+ # dwm version
+-VERSION = 6.5
++VERSION = 6.6
+ 
+ # Customize below to fit your system
+ 
 diff --git a/drw.c b/drw.c
 index 6be5dee..11387e5 100644
 --- a/drw.c

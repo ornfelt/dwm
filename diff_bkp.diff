@@ -169,9 +169,16 @@ index 342750a..303596c 100644
      { ClkStatusText,        ShiftMask,      Button3,        spawn,          SHCMD(TERMINAL " -e nvim ~/.config/dwmblocks/config.h") },
      { ClkClientWin,         MODKEY,         Button1,        movemouse,      {0} },
 diff --git a/config.mk b/config.mk
-index 1fc4bf1..a933c0b 100644
+index 1fc4bf1..93f9739 100644
 --- a/config.mk
 +++ b/config.mk
+@@ -1,5 +1,5 @@
+ # dwm version
+-VERSION = 6.5
++VERSION = 6.6
+ 
+ # Customize below to fit your system
+ 
 @@ -19,10 +19,12 @@ FREETYPELIBS = -lfontconfig -lXft
  FREETYPEINC = /usr/include/freetype2
  # OpenBSD (uncomment)
