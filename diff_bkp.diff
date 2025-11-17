@@ -65,7 +65,7 @@ index 482b545..95d4fd0 100644
  
  
 diff --git a/config.h b/config.h
-index 342750a..303596c 100644
+index 342750a..98fb30c 100644
 --- a/config.h
 +++ b/config.h
 @@ -28,15 +28,16 @@ static int smartgaps            = 0;        /* 1 means no outer gap when there i
@@ -104,7 +104,15 @@ index 342750a..303596c 100644
  /* const char *spcmd2[] = {"st", "-n", "spcalc", "-f", "monospace:size=16", "-g", "50x20", "-e", "bc", "-lq", NULL }; */
  static Sp scratchpads[] = {
      /* name          cmd  */
-@@ -127,8 +130,13 @@ static const Layout layouts[] = {
+@@ -90,6 +93,7 @@ static const Rule rules[] = {
+ static float mfact     = 0.55; /* factor of master area size [0.05..0.95] */
+ static int nmaster     = 1;    /* number of clients in master area */
+ static int resizehints = 0;    /* 1 means respect size hints in tiled resizals */
++static const int refreshrate = 120;  /* refresh rate (per second) for client move/resize */
+ 
+ #define FORCE_VSPLIT 1  /* nrowgrid layout: force two clients to always split vertically */
+ #include "vanitygaps.c"
+@@ -127,8 +131,13 @@ static const Layout layouts[] = {
  /* helper for spawning shell commands in the pre dwm-5.0 fashion */
  #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
  
@@ -118,7 +126,7 @@ index 342750a..303596c 100644
  
  /*
   * Xresources preferences to load at startup
-@@ -157,7 +165,6 @@ ResourcePref resources[] = {
+@@ -157,7 +166,6 @@ ResourcePref resources[] = {
  };
  
  #include <X11/XF86keysym.h>
@@ -126,7 +134,7 @@ index 342750a..303596c 100644
  
  static const Key keys[] = {
      /*  modifier                    key                 function            argument */
-@@ -203,12 +210,12 @@ static const Key keys[] = {
+@@ -203,12 +211,12 @@ static const Key keys[] = {
          { MODKEY,                   XK_minus,           incrgaps,           {.i = -3 } },
          { MODKEY|ShiftMask,         XK_plus,            incrgaps,           {.i = +1 } },
          { MODKEY|ShiftMask,         XK_minus,           incrgaps,           {.i = -1 } },
@@ -142,7 +150,7 @@ index 342750a..303596c 100644
          { MODKEY|ControlMask|ShiftMask,     XK_p,       togglebar,          {0} },
          { MODKEY,                   XK_h,               focusmon,           { .i = -1 } },
          { MODKEY|ShiftMask,         XK_h,               tagmonview,         { .i = -1 } },
-@@ -328,17 +335,19 @@ static const Key keys[] = {
+@@ -328,17 +336,19 @@ static const Key keys[] = {
          /* { 0, XF86XK_TouchpadOn,                         spawn,              SHCMD("synclient TouchpadOff=0") }, */
  };
  
@@ -1159,7 +1167,7 @@ index 7feba78..d04bec6 100644
  .BR dmenu (1),
  .BR st (1)
 diff --git a/dwm.c b/dwm.c
-index 9086e16..0d7be52 100644
+index 9086e16..b7a8aca 100644
 --- a/dwm.c
 +++ b/dwm.c
 @@ -29,6 +29,7 @@
@@ -3300,7 +3308,7 @@ index 9086e16..0d7be52 100644
 +			handler[ev.type](&ev);
 +			break;
 +		case MotionNotify:
-+			if ((ev.xmotion.time - lasttime) <= (1000 / 60))
++            if ((ev.xmotion.time - lasttime) <= (1000 / refreshrate))
 +				continue;
 +			lasttime = ev.xmotion.time;
 +
@@ -3627,7 +3635,7 @@ index 9086e16..0d7be52 100644
 +			handler[ev.type](&ev);
 +			break;
 +		case MotionNotify:
-+			if ((ev.xmotion.time - lasttime) <= (1000 / 60))
++            if ((ev.xmotion.time - lasttime) <= (1000 / refreshrate))
 +				continue;
 +			lasttime = ev.xmotion.time;
 +
