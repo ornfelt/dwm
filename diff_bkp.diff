@@ -202,7 +202,7 @@ index 1fc4bf1..93f9739 100644
  # flags
  CPPFLAGS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700L -DVERSION=\"${VERSION}\" ${XINERAMAFLAGS}
 diff --git a/drw.c b/drw.c
-index d43d8c2..11387e5 100644
+index d43d8c2..32096ee 100644
 --- a/drw.c
 +++ b/drw.c
 @@ -13,7 +13,6 @@
@@ -305,7 +305,7 @@ index d43d8c2..11387e5 100644
  }
  
  /* This function is an implementation detail. Library users should use
-@@ -92,91 +91,91 @@ drw_free(Drw *drw)
+@@ -92,136 +91,158 @@ drw_free(Drw *drw)
  static Fnt *
  xfont_create(Drw *drw, const char *fontname, FcPattern *fontpattern)
  {
@@ -461,7 +461,10 @@ index d43d8c2..11387e5 100644
  
      dest->pixel |= 0xff << 24;
  }
-@@ -186,42 +185,42 @@ drw_clr_create(Drw *drw, Clr *dest, const char *clrname)
+ 
+-/* Wrapper to create color schemes. The caller has to call free(3) on the
+- * returned color scheme when done using it. */
++/* Create color schemes. */
  Clr *
  drw_scm_create(Drw *drw, char *clrnames[], size_t clrcount)
  {
@@ -474,7 +477,7 @@ index d43d8c2..11387e5 100644
 -    if (!drw || !clrnames || clrcount < 2 || !(ret = ecalloc(clrcount, sizeof(XftColor))))
 -        return NULL;
 +	/* need at least two colors for a scheme */
-+	if (!drw || !clrnames || clrcount < 2 || !(ret = ecalloc(clrcount, sizeof(XftColor))))
++    if (!drw || !clrnames || clrcount < 2 || !(ret = ecalloc(clrcount, sizeof(Clr))))
 +		return NULL;
  
 -    for (i = 0; i < clrcount; i++)
@@ -483,6 +486,29 @@ index d43d8c2..11387e5 100644
 +	for (i = 0; i < clrcount; i++)
 +		drw_clr_create(drw, &ret[i], clrnames[i]);
 +	return ret;
++}
++
++void
++drw_clr_free(Drw *drw, Clr *c)
++{
++	if (!drw || !c)
++		return;
++
++	/* c is typedef XftColor Clr */
++	XftColorFree(drw->dpy, DefaultVisual(drw->dpy, drw->screen),
++	             DefaultColormap(drw->dpy, drw->screen), c);
++}
++
++void
++drw_scm_free(Drw *drw, Clr *scm, size_t clrcount)
++{
++	size_t i;
++
++	if (!drw || !scm)
++		return;
++
++	for (i = 0; i < clrcount; i++)
++		drw_clr_free(drw, &scm[i]);
  }
  
  void
@@ -523,7 +549,7 @@ index d43d8c2..11387e5 100644
  }
  
  int
-@@ -229,52 +228,51 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lp
+@@ -229,52 +250,51 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lp
  {
  	int ty, ellipsis_x = 0;
  	unsigned int tmpw, ew, ellipsis_w = 0, ellipsis_len, hash, h0, h1;
@@ -609,7 +635,7 @@ index d43d8c2..11387e5 100644
  					drw_font_getexts(curfont, text, utf8charlen, &tmpw, NULL);
  					if (ew + ellipsis_width <= w) {
  						/* keep track where the ellipsis still fits */
-@@ -293,31 +291,31 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lp
+@@ -293,31 +313,31 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lp
  						else
  							utf8strlen = ellipsis_len;
  					} else if (curfont == usedfont) {
@@ -658,7 +684,7 @@ index d43d8c2..11387e5 100644
  		if (utf8err && (!render || invalid_width < w)) {
  			if (render)
  				drw_text(drw, x, y, w, h, 0, invalid, invert);
-@@ -327,15 +325,15 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lp
+@@ -327,15 +347,15 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lp
  		if (render && overflow)
  			drw_text(drw, ellipsis_x, y, ellipsis_w, h, 0, "...", invert);
  
@@ -683,7 +709,7 @@ index d43d8c2..11387e5 100644
  
  			hash = (unsigned int)utf8codepoint;
  			hash = ((hash >> 16) ^ hash) * 0x21F0AAAD;
-@@ -346,63 +344,62 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lp
+@@ -346,63 +366,62 @@ drw_text(Drw *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lp
  			if (nomatches[h0] == utf8codepoint || nomatches[h1] == utf8codepoint)
  				goto no_match;
  
@@ -791,7 +817,7 @@ index d43d8c2..11387e5 100644
  }
  
  unsigned int
-@@ -417,37 +414,37 @@ drw_fontset_getwidth_clamp(Drw *drw, const char *text, unsigned int n)
+@@ -417,37 +436,37 @@ drw_fontset_getwidth_clamp(Drw *drw, const char *text, unsigned int n)
  void
  drw_font_getexts(Fnt *font, const char *text, unsigned int len, unsigned int *w, unsigned int *h)
  {
@@ -847,7 +873,7 @@ index d43d8c2..11387e5 100644
 +	free(cursor);
  }
 diff --git a/drw.h b/drw.h
-index ea76849..bdbf950 100644
+index ea76849..fbfec02 100644
 --- a/drw.h
 +++ b/drw.h
 @@ -1,29 +1,29 @@
@@ -894,6 +920,16 @@ index ea76849..bdbf950 100644
  } Drw;
  
  /* Drawable abstraction */
+@@ -40,7 +40,9 @@ void drw_font_getexts(Fnt *font, const char *text, unsigned int len, unsigned in
+ 
+ /* Colorscheme abstraction */
+ void drw_clr_create(Drw *drw, Clr *dest, const char *clrname);
++void drw_clr_free(Drw *drw, Clr *c);
+ Clr *drw_scm_create(Drw *drw, char *clrnames[], size_t clrcount);
++void drw_scm_free(Drw *drw, Clr *scm, size_t clrcount);
+ 
+ /* Cursor abstraction */
+ Cur *drw_cur_create(Drw *drw, int shape);
 diff --git a/dwm.1 b/dwm.1
 index 7feba78..d04bec6 100644
 --- a/dwm.1
@@ -1167,7 +1203,7 @@ index 7feba78..d04bec6 100644
  .BR dmenu (1),
  .BR st (1)
 diff --git a/dwm.c b/dwm.c
-index 9086e16..b7a8aca 100644
+index 9086e16..2606b45 100644
 --- a/dwm.c
 +++ b/dwm.c
 @@ -29,6 +29,7 @@
@@ -1530,7 +1566,7 @@ index 9086e16..b7a8aca 100644
  static int running = 1;
  static Cur *cursor[CurLast];
  static Clr **scheme;
-@@ -340,528 +358,529 @@ struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
+@@ -340,528 +358,531 @@ struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
  void
  applyrules(Client *c)
  {
@@ -2071,8 +2107,10 @@ index 9086e16..b7a8aca 100644
 +		cleanupmon(mons);
 +	for (i = 0; i < CurLast; i++)
 +		drw_cur_free(drw, cursor[i]);
-+	for (i = 0; i < LENGTH(colors) + 1; i++)
++	for (i = 0; i < LENGTH(colors); i++) {
++		drw_scm_free(drw, scheme[i], 3);
 +		free(scheme[i]);
++    }
 +	free(scheme);
 +	XDestroyWindow(dpy, wmcheckwin);
 +	drw_free(drw);
@@ -2462,7 +2500,7 @@ index 9086e16..b7a8aca 100644
      return m;
  }
  
-@@ -936,7 +955,7 @@ drawstatusbar(Monitor *m, int bh, char* stext)
+@@ -936,7 +957,7 @@ drawstatusbar(Monitor *m, int bh, char* stext)
                      if (ptr == NULL) printf("Fail to read wr...");
                      do{
                          ch = fgetc(ptr);
@@ -2471,7 +2509,7 @@ index 9086e16..b7a8aca 100644
                          if (hotbool){
                              if ((ch == '2' || ch == '3') && fgetc(ptr) <= '9'){
                                  drw_clr_create(drw, &drw->scheme[ColFg], col21);
-@@ -990,108 +1009,124 @@ drawstatusbar(Monitor *m, int bh, char* stext)
+@@ -990,108 +1011,124 @@ drawstatusbar(Monitor *m, int bh, char* stext)
  void
  drawbar(Monitor *m)
  {
@@ -2663,7 +2701,7 @@ index 9086e16..b7a8aca 100644
          return;
      unfocus(selmon->sel, 0);
      XWarpPointer(dpy, None, m->barwin, 0, 0, 0, 0, m->mw / 2, m->mh / 2);
-@@ -1102,622 +1137,669 @@ focusmon(const Arg *arg)
+@@ -1102,622 +1139,669 @@ focusmon(const Arg *arg)
  void
  focusstack(const Arg *arg)
  {
@@ -3811,7 +3849,7 @@ index 9086e16..b7a8aca 100644
  {
      system("killall -q dwmblocks; dwmblocks &");
  }
-@@ -1725,44 +1807,44 @@ runAutostart(void)
+@@ -1725,44 +1809,44 @@ runAutostart(void)
  void
  scan(void)
  {
@@ -3889,7 +3927,7 @@ index 9086e16..b7a8aca 100644
  }
  
  void
-@@ -1787,318 +1869,616 @@ sendmonview(Client *c, Monitor *m)
+@@ -1787,318 +1871,616 @@ sendmonview(Client *c, Monitor *m)
  void
  setclientstate(Client *c, long state)
  {
@@ -4742,7 +4780,7 @@ index 9086e16..b7a8aca 100644
  {
      if (selmon->sel && arg->ui & TAGMASK) {
          selmon->sel->tags = arg->ui & TAGMASK;
-@@ -2109,439 +2489,515 @@ tagview(const Arg *arg)
+@@ -2109,439 +2491,515 @@ tagview(const Arg *arg)
  }
  
  void
@@ -5556,7 +5594,7 @@ index 9086e16..b7a8aca 100644
      }
  
      selmon->seltags ^= 1; /* toggle sel tagset */
-@@ -2554,135 +3010,161 @@ view(const Arg *arg)
+@@ -2554,135 +3012,161 @@ view(const Arg *arg)
  pid_t
  winpid(Window w)
  {
@@ -5799,7 +5837,7 @@ index 9086e16..b7a8aca 100644
  }
  
  /* There's no way to check accesses to destroyed windows, thus those cases are
-@@ -2691,25 +3173,25 @@ wintomon(Window w)
+@@ -2691,25 +3175,25 @@ wintomon(Window w)
  int
  xerror(Display *dpy, XErrorEvent *ee)
  {
@@ -5839,7 +5877,7 @@ index 9086e16..b7a8aca 100644
  }
  
  /* Startup Error handler to check if another window manager
-@@ -2717,107 +3199,103 @@ xerrordummy(Display *dpy, XErrorEvent *ee)
+@@ -2717,107 +3201,103 @@ xerrordummy(Display *dpy, XErrorEvent *ee)
  int
  xerrorstart(Display *dpy, XErrorEvent *ee)
  {
