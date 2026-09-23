@@ -572,7 +572,7 @@ index bdbf950..fbfec02 100644
  /* Cursor abstraction */
  Cur *drw_cur_create(Drw *drw, int shape);
 diff --git a/dwm.c b/dwm.c
-index 1ce4a38..ce407e7 100644
+index 1ce4a38..203b8d7 100644
 --- a/dwm.c
 +++ b/dwm.c
 @@ -62,8 +62,8 @@
@@ -997,7 +997,17 @@ index 1ce4a38..ce407e7 100644
  void
  focusstack(const Arg *arg)
  {
-@@ -1671,7 +1477,7 @@ movemouse(const Arg *arg)
+@@ -1354,7 +1160,8 @@ getatomprop(Client *c, Atom prop)
+ 
+ 	if (XGetWindowProperty(dpy, c->win, prop, 0L, sizeof atom, False, XA_ATOM,
+ 		&da, &di, &dl, &dl, &p) == Success && p) {
+-		atom = *(Atom *)p;
++		if (dl > 0)
++			atom = *(Atom *)p;
+ 		XFree(p);
+ 	}
+ 	return atom;
+@@ -1671,7 +1478,7 @@ movemouse(const Arg *arg)
  			handler[ev.type](&ev);
  			break;
  		case MotionNotify:
@@ -1006,7 +1016,7 @@ index 1ce4a38..ce407e7 100644
  				continue;
  			lasttime = ev.xmotion.time;
  
-@@ -1814,8 +1620,8 @@ resizeclient(Client *c, int x, int y, int w, int h)
+@@ -1814,8 +1621,8 @@ resizeclient(Client *c, int x, int y, int w, int h)
  	if (((nexttiled(c->mon->clients) == c && !nexttiled(c->next))
  	    || &monocle == c->mon->lt[c->mon->sellt]->arrange)
  	    && !c->isfullscreen && !c->isfloating) {
@@ -1017,7 +1027,7 @@ index 1ce4a38..ce407e7 100644
  		wc.border_width = 0;
  	}
  	XConfigureWindow(dpy, c->win, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
-@@ -1852,7 +1658,7 @@ resizemouse(const Arg *arg)
+@@ -1852,7 +1659,7 @@ resizemouse(const Arg *arg)
  			handler[ev.type](&ev);
  			break;
  		case MotionNotify:
@@ -1026,7 +1036,7 @@ index 1ce4a38..ce407e7 100644
  				continue;
  			lasttime = ev.xmotion.time;
  
-@@ -2166,6 +1972,188 @@ setlayout(const Arg *arg)
+@@ -2166,6 +1973,188 @@ setlayout(const Arg *arg)
  		drawbar(selmon);
  }
  
@@ -1215,7 +1225,7 @@ index 1ce4a38..ce407e7 100644
  void
  setcfact(const Arg *arg) {
  	float f;
-@@ -2379,20 +2367,76 @@ stackpos(const Arg *arg) {
+@@ -2379,20 +2368,76 @@ stackpos(const Arg *arg) {
  		return arg->i;
  }
  
@@ -1297,7 +1307,7 @@ index 1ce4a38..ce407e7 100644
          selmon->sel->tags = arg->ui & TAGMASK;
          focus(NULL);
          arrange(selmon);
-@@ -2416,6 +2460,51 @@ tagmonview(const Arg *arg)
+@@ -2416,6 +2461,51 @@ tagmonview(const Arg *arg)
      sendmonview(selmon->sel, dirtomon(arg->i));
  }
  
@@ -1349,7 +1359,7 @@ index 1ce4a38..ce407e7 100644
  void
  togglebar(const Arg *arg)
  {
-@@ -2425,6 +2514,18 @@ togglebar(const Arg *arg)
+@@ -2425,6 +2515,18 @@ togglebar(const Arg *arg)
  	arrange(selmon);
  }
  
@@ -1368,7 +1378,7 @@ index 1ce4a38..ce407e7 100644
  void
  togglefloating(const Arg *arg)
  {
-@@ -2433,6 +2534,7 @@ togglefloating(const Arg *arg)
+@@ -2433,6 +2535,7 @@ togglefloating(const Arg *arg)
  	if (selmon->sel->isfullscreen) /* no support for fullscreen windows */
  		return;
  	selmon->sel->isfloating = !selmon->sel->isfloating || selmon->sel->isfixed;
@@ -1376,7 +1386,7 @@ index 1ce4a38..ce407e7 100644
  	if (selmon->sel->isfloating)
  		/* restore last known float dimensions */
  		resize(selmon->sel, selmon->sel->sfx, selmon->sel->sfy,
-@@ -2444,6 +2546,17 @@ togglefloating(const Arg *arg)
+@@ -2444,6 +2547,17 @@ togglefloating(const Arg *arg)
  		selmon->sel->sfw = selmon->sel->w;
  		selmon->sel->sfh = selmon->sel->h;
  	}
@@ -1394,7 +1404,7 @@ index 1ce4a38..ce407e7 100644
  	arrange(selmon);
  }
  
-@@ -2642,11 +2755,11 @@ updategeom(void)
+@@ -2642,11 +2756,11 @@ updategeom(void)
  
  #ifdef XINERAMA
  	if (XineramaIsActive(dpy)) {
@@ -1411,7 +1421,7 @@ index 1ce4a38..ce407e7 100644
  
  		for (n = 0, m = mons; m; m = m->next, n++);
  		/* only consider unique geometries as separate screens */
-@@ -2665,6 +2778,51 @@ updategeom(void)
+@@ -2665,6 +2779,51 @@ updategeom(void)
  			else
  				mons = createmon();
  		}
@@ -1463,7 +1473,7 @@ index 1ce4a38..ce407e7 100644
  		for (i = 0, m = mons; i < nn && m; m = m->next, i++)
  			if (i >= n
  			|| unique[i].x_org != m->mx || unique[i].y_org != m->my
-@@ -2827,16 +2985,27 @@ updatewmhints(Client *c)
+@@ -2827,16 +2986,27 @@ updatewmhints(Client *c)
  void
  view(const Arg *arg)
  {
