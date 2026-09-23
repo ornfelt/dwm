@@ -1606,7 +1606,7 @@ index 7feba78..d04bec6 100644
  .BR dmenu (1),
  .BR st (1)
 diff --git a/dwm.c b/dwm.c
-index 9086e16..203b8d7 100644
+index 9086e16..1bc174a 100644
 --- a/dwm.c
 +++ b/dwm.c
 @@ -29,6 +29,7 @@
@@ -3135,7 +3135,7 @@ index 9086e16..203b8d7 100644
 -    unsigned char *p = NULL;
 -    Atom da, atom = None;
 +	int di;
-+	unsigned long dl;
++	unsigned long nitems, dl;
 +	unsigned char *p = NULL;
 +	Atom da, atom = None;
  
@@ -3146,8 +3146,8 @@ index 9086e16..203b8d7 100644
 -    }
 -    return atom;
 +	if (XGetWindowProperty(dpy, c->win, prop, 0L, sizeof atom, False, XA_ATOM,
-+		&da, &di, &dl, &dl, &p) == Success && p) {
-+		if (dl > 0)
++		&da, &di, &nitems, &dl, &p) == Success && p) {
++		if (nitems > 0)
 +			atom = *(Atom *)p;
 +		XFree(p);
 +	}
