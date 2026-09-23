@@ -508,13 +508,13 @@ index 3d14213..b478853 100644
      { ClkRootWin,           0,              Button2,        togglebar,      {0} },
  };
 diff --git a/config.mk b/config.mk
-index a933c0b..f7a1bb2 100644
+index a933c0b..49b3c6c 100644
 --- a/config.mk
 +++ b/config.mk
 @@ -1,5 +1,5 @@
  # dwm version
 -VERSION = 6.5
-+VERSION = 6.7
++VERSION = 6.8
  
  # Customize below to fit your system
  
