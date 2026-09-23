@@ -1606,7 +1606,7 @@ index 7feba78..d04bec6 100644
  .BR dmenu (1),
  .BR st (1)
 diff --git a/dwm.c b/dwm.c
-index 9086e16..1bc174a 100644
+index 9086e16..f85028c 100644
 --- a/dwm.c
 +++ b/dwm.c
 @@ -29,6 +29,7 @@
@@ -4330,7 +4330,7 @@ index 9086e16..1bc174a 100644
  }
  
  void
-@@ -1787,318 +1871,616 @@ sendmonview(Client *c, Monitor *m)
+@@ -1787,318 +1871,614 @@ sendmonview(Client *c, Monitor *m)
  void
  setclientstate(Client *c, long state)
  {
@@ -4398,12 +4398,10 @@ index 9086e16..1bc174a 100644
 -                (unsigned char *) &(c->win), 1);
 -    }
 -    sendevent(c, wmatom[WMTakeFocus]);
-+	if (!c->neverfocus) {
++	if (!c->neverfocus)
 +		XSetInputFocus(dpy, c->win, RevertToPointerRoot, CurrentTime);
-+		XChangeProperty(dpy, root, netatom[NetActiveWindow],
-+			XA_WINDOW, 32, PropModeReplace,
-+			(unsigned char *) &(c->win), 1);
-+	}
++	XChangeProperty(dpy, root, netatom[NetActiveWindow], XA_WINDOW, 32,
++		PropModeReplace, (unsigned char *)&c->win, 1);
 +	sendevent(c, wmatom[WMTakeFocus]);
  }
  
@@ -5183,7 +5181,7 @@ index 9086e16..1bc174a 100644
  {
      if (selmon->sel && arg->ui & TAGMASK) {
          selmon->sel->tags = arg->ui & TAGMASK;
-@@ -2109,439 +2491,515 @@ tagview(const Arg *arg)
+@@ -2109,439 +2489,515 @@ tagview(const Arg *arg)
  }
  
  void
@@ -5997,7 +5995,7 @@ index 9086e16..1bc174a 100644
      }
  
      selmon->seltags ^= 1; /* toggle sel tagset */
-@@ -2554,135 +3012,161 @@ view(const Arg *arg)
+@@ -2554,135 +3010,161 @@ view(const Arg *arg)
  pid_t
  winpid(Window w)
  {
@@ -6240,7 +6238,7 @@ index 9086e16..1bc174a 100644
  }
  
  /* There's no way to check accesses to destroyed windows, thus those cases are
-@@ -2691,25 +3175,25 @@ wintomon(Window w)
+@@ -2691,25 +3173,25 @@ wintomon(Window w)
  int
  xerror(Display *dpy, XErrorEvent *ee)
  {
@@ -6280,7 +6278,7 @@ index 9086e16..1bc174a 100644
  }
  
  /* Startup Error handler to check if another window manager
-@@ -2717,107 +3201,103 @@ xerrordummy(Display *dpy, XErrorEvent *ee)
+@@ -2717,107 +3199,103 @@ xerrordummy(Display *dpy, XErrorEvent *ee)
  int
  xerrorstart(Display *dpy, XErrorEvent *ee)
  {
