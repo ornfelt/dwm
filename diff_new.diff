@@ -115,6 +115,25 @@ index 0000000..1807745
 +conflicts (and how they were resolved), or was stopped for a question. Include the build result
 +and the fork commits created. If stopped on a question, name the commit it is waiting on so the
 +next run starts there.
+diff --git a/LICENSE b/LICENSE
+index 995172f..596e6cd 100644
+--- a/LICENSE
++++ b/LICENSE
+@@ -1,5 +1,6 @@
+ MIT/X Consortium License
+ 
++© 2010-2026 Hiltjo Posthuma <hiltjo@codemadness.org>
+ © 2006-2019 Anselm R Garbe <anselm@garbe.ca>
+ © 2006-2009 Jukka Salmi <jukka at salmi dot ch>
+ © 2006-2007 Sander van Dijk <a dot h dot vandijk at gmail dot com>
+@@ -11,7 +12,6 @@ MIT/X Consortium License
+ © 2008 Martin Hurton <martin dot hurton at gmail dot com>
+ © 2008 Neale Pickett <neale dot woozle dot org>
+ © 2009 Mate Nagy <mnagy at port70 dot net>
+-© 2010-2016 Hiltjo Posthuma <hiltjo@codemadness.org>
+ © 2010-2012 Connor Lane Smith <cls@lubutu.com>
+ © 2011 Christoph Lohmann <20h@r-36.net>
+ © 2015-2016 Quentin Rameau <quinq@fifth.space>
 diff --git a/README b/README
 index 482b545..95d4fd0 100644
 --- a/README
@@ -489,13 +508,13 @@ index 3d14213..b478853 100644
      { ClkRootWin,           0,              Button2,        togglebar,      {0} },
  };
 diff --git a/config.mk b/config.mk
-index a933c0b..93f9739 100644
+index a933c0b..f7a1bb2 100644
 --- a/config.mk
 +++ b/config.mk
 @@ -1,5 +1,5 @@
  # dwm version
 -VERSION = 6.5
-+VERSION = 6.6
++VERSION = 6.7
  
  # Customize below to fit your system
  

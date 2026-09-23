@@ -116,10 +116,23 @@ index 0000000..1807745
 +and the fork commits created. If stopped on a question, name the commit it is waiting on so the
 +next run starts there.
 diff --git a/LICENSE b/LICENSE
-index 1e1b5a4..995172f 100644
+index 1e1b5a4..596e6cd 100644
 --- a/LICENSE
 +++ b/LICENSE
-@@ -17,7 +17,7 @@ MIT/X Consortium License
+@@ -1,5 +1,6 @@
+ MIT/X Consortium License
+ 
++© 2010-2026 Hiltjo Posthuma <hiltjo@codemadness.org>
+ © 2006-2019 Anselm R Garbe <anselm@garbe.ca>
+ © 2006-2009 Jukka Salmi <jukka at salmi dot ch>
+ © 2006-2007 Sander van Dijk <a dot h dot vandijk at gmail dot com>
+@@ -11,13 +12,12 @@ MIT/X Consortium License
+ © 2008 Martin Hurton <martin dot hurton at gmail dot com>
+ © 2008 Neale Pickett <neale dot woozle dot org>
+ © 2009 Mate Nagy <mnagy at port70 dot net>
+-© 2010-2016 Hiltjo Posthuma <hiltjo@codemadness.org>
+ © 2010-2012 Connor Lane Smith <cls@lubutu.com>
+ © 2011 Christoph Lohmann <20h@r-36.net>
  © 2015-2016 Quentin Rameau <quinq@fifth.space>
  © 2015-2016 Eric Pruitt <eric.pruitt@gmail.com>
  © 2016-2017 Markus Teich <markus.teich@stusta.mhn.de>
@@ -566,13 +579,13 @@ index 342750a..b478853 100644
      { ClkRootWin,           0,              Button2,        togglebar,      {0} },
  };
 diff --git a/config.mk b/config.mk
-index 1fc4bf1..93f9739 100644
+index 1fc4bf1..f7a1bb2 100644
 --- a/config.mk
 +++ b/config.mk
 @@ -1,5 +1,5 @@
  # dwm version
 -VERSION = 6.5
-+VERSION = 6.6
++VERSION = 6.7
  
  # Customize below to fit your system
  
