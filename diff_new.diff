@@ -591,7 +591,7 @@ index bdbf950..fbfec02 100644
  /* Cursor abstraction */
  Cur *drw_cur_create(Drw *drw, int shape);
 diff --git a/dwm.c b/dwm.c
-index 1ce4a38..e6a36cb 100644
+index 1ce4a38..2ce9ad9 100644
 --- a/dwm.c
 +++ b/dwm.c
 @@ -62,8 +62,8 @@
@@ -1016,11 +1016,13 @@ index 1ce4a38..e6a36cb 100644
  void
  focusstack(const Arg *arg)
  {
-@@ -1348,13 +1154,14 @@ Atom
+@@ -1347,14 +1153,15 @@ focusstack(const Arg *arg)
+ Atom
  getatomprop(Client *c, Atom prop)
  {
- 	int di;
+-	int di;
 -	unsigned long dl;
++	int format;
 +	unsigned long nitems, dl;
  	unsigned char *p = NULL;
  	Atom da, atom = None;
@@ -1028,9 +1030,9 @@ index 1ce4a38..e6a36cb 100644
  	if (XGetWindowProperty(dpy, c->win, prop, 0L, sizeof atom, False, XA_ATOM,
 -		&da, &di, &dl, &dl, &p) == Success && p) {
 -		atom = *(Atom *)p;
-+		&da, &di, &nitems, &dl, &p) == Success && p) {
-+		if (nitems > 0)
-+			atom = *(Atom *)p;
++		&da, &format, &nitems, &dl, &p) == Success && p) {
++		if (nitems > 0 && format == 32)
++			atom = *(long *)p;
  		XFree(p);
  	}
  	return atom;
