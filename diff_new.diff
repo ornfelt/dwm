@@ -591,7 +591,7 @@ index bdbf950..fbfec02 100644
  /* Cursor abstraction */
  Cur *drw_cur_create(Drw *drw, int shape);
 diff --git a/dwm.c b/dwm.c
-index 1ce4a38..f85028c 100644
+index 1ce4a38..e6a36cb 100644
 --- a/dwm.c
 +++ b/dwm.c
 @@ -62,8 +62,8 @@
@@ -1034,6 +1034,20 @@ index 1ce4a38..f85028c 100644
  		XFree(p);
  	}
  	return atom;
+@@ -1404,10 +1211,10 @@ getstate(Window w)
+ 	Atom real;
+ 
+ 	if (XGetWindowProperty(dpy, w, wmatom[WMState], 0L, 2L, False, wmatom[WMState],
+-		&real, &format, &n, &extra, (unsigned char **)&p) != Success)
++		&real, &format, &n, &extra, &p) != Success)
+ 		return -1;
+-	if (n != 0)
+-		result = *p;
++	if (n != 0 && format == 32)
++		result = *(long *)p;
+ 	XFree(p);
+ 	return result;
+ }
 @@ -1671,7 +1478,7 @@ movemouse(const Arg *arg)
  			handler[ev.type](&ev);
  			break;

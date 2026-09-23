@@ -1606,7 +1606,7 @@ index 7feba78..d04bec6 100644
  .BR dmenu (1),
  .BR st (1)
 diff --git a/dwm.c b/dwm.c
-index 9086e16..f85028c 100644
+index 9086e16..e6a36cb 100644
 --- a/dwm.c
 +++ b/dwm.c
 @@ -29,6 +29,7 @@
@@ -3225,10 +3225,10 @@ index 9086e16..f85028c 100644
 -    XFree(p);
 -    return result;
 +	if (XGetWindowProperty(dpy, w, wmatom[WMState], 0L, 2L, False, wmatom[WMState],
-+		&real, &format, &n, &extra, (unsigned char **)&p) != Success)
++		&real, &format, &n, &extra, &p) != Success)
 +		return -1;
-+	if (n != 0)
-+		result = *p;
++	if (n != 0 && format == 32)
++		result = *(long *)p;
 +	XFree(p);
 +	return result;
  }
