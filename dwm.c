@@ -2768,7 +2768,7 @@ updategeom(void)
 	if (XineramaIsActive(dpy)) {
         int i, j, n, nn;
         Client *c, *next_client;
-        Monitor *m, *primary, *secondary, *current_monitor;
+        Monitor *m, *primary, *secondary;
         XineramaScreenInfo *info = XineramaQueryScreens(dpy, &nn);
         XineramaScreenInfo *unique = NULL;
 
@@ -2790,46 +2790,24 @@ updategeom(void)
 				mons = createmon();
 		}
 
-        /* Logic for moving clients */
-        if (nn == 2) {
-            /* Case with exactly two monitors: Move even-tagged clients */
+        /* Logic for moving clients: only when monitors were added.
+         * Odd tags live on the first monitor and even tags on the second,
+         * so with two or more monitors move even-tagged clients over. */
+        if (nn > n && nn >= 2) {
             primary = mons;         /* First monitor */
             secondary = mons->next; /* Second monitor */
 
-            if (primary && secondary) {
-                for (c = primary->clients; c; c = next_client) {
-                    next_client = c->next;
+            for (c = primary->clients; c; c = next_client) {
+                next_client = c->next;
 
-                    /* Check if the client belongs to an even tag */
-                    if (c->tags & 0b010101010) { /* Even tags: 2, 4, 6, 8 */
-                        detach(c);               /* Detach from primary monitor */
-                        detachstack(c);
-
-                        c->mon = secondary;     /* Assign to secondary monitor */
-                        attach(c);              /* Attach to secondary monitor */
-                        attachstack(c);
-                    }
-                }
-            }
-        } else if (nn > 2) {
-            /* Case with more than two monitors: Move clients cyclically */
-            for (m = mons; m; m = m->next) {
-                current_monitor = m; /* Start with the current monitor */
-
-                for (c = current_monitor->clients; c; c = next_client) {
-                    next_client = c->next;
-
-                    /* Determine the next monitor cyclically */
-                    Monitor *next_monitor = current_monitor->next ? current_monitor->next : mons;
-
-                    detach(c);               /* Detach client from current monitor */
+                /* Check if the client belongs to an even tag */
+                if (c->tags & 0x0AA) {   /* Even tags: 2, 4, 6, 8 */
+                    detach(c);           /* Detach from primary monitor */
                     detachstack(c);
 
-                    c->mon = next_monitor;   /* Assign client to the next monitor */
-                    attach(c);               /* Attach to the next monitor */
+                    c->mon = secondary;  /* Assign to secondary monitor */
+                    attach(c);           /* Attach to secondary monitor */
                     attachstack(c);
-
-                    current_monitor = next_monitor; /* Update current monitor */
                 }
             }
         }
