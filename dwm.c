@@ -583,9 +583,9 @@ buttonpress(XEvent *e)
 			arg.ui = 1 << i;
 		} else if (ev->x < x + TEXTW(selmon->ltsymbol))
 			click = ClkLtSymbol;
-        } else if (ev->x > selmon->ww - statusw) {
-            x = selmon->ww - statusw;
-            click = ClkStatusText;
+		else if (ev->x > selmon->ww - statusw) {
+			x = selmon->ww - statusw;
+			click = ClkStatusText;
 
 			char *text, *s, ch;
 			statussig = 0;
@@ -610,6 +610,7 @@ buttonpress(XEvent *e)
 					s--;
 				}
 			}
+		}
 	} else if ((c = wintoclient(ev->window))) {
 		if (focusonwheel || (ev->button != Button4 && ev->button != Button5))
 			focus(c);
