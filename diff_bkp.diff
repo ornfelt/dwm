@@ -1620,7 +1620,7 @@ index 7feba78..d04bec6 100644
  .BR dmenu (1),
  .BR st (1)
 diff --git a/dwm.c b/dwm.c
-index 9086e16..abe07b0 100644
+index 9086e16..c773566 100644
 --- a/dwm.c
 +++ b/dwm.c
 @@ -29,6 +29,7 @@
@@ -2974,19 +2974,17 @@ index 9086e16..abe07b0 100644
 -    int boxw = drw->fonts->h / 6 + 2;
 -    unsigned int i, occ = 0, urg = 0;
 -    Client *c;
-+	int x, w, tw = 0;
-+	int boxs = drw->fonts->h / 9;
-+	int boxw = drw->fonts->h / 6 + 2;
-+	unsigned int i, occ = 0, urg = 0;
-+	Client *c;
- 
+-
 -    /* draw status first so it can be overdrawn by tags later */
 -    /* if (m == selmon) { /1* status is only drawn on selected monitor *1/ */
 -    if (m == selmon || 1) { 
 -        tw = m->ww - drawstatusbar(m, bh, stext);
 -    }
-+	if (!m->showbar)
-+		return;
++	int x, w, tw = 0;
++	int boxs = drw->fonts->h / 9;
++	int boxw = drw->fonts->h / 6 + 2;
++	unsigned int i, occ = 0, urg = 0;
++	Client *c;
  
 -    for (c = m->clients; c; c = c->next) {
 -        occ |= c->tags == 255 ? 0 : c->tags;
@@ -3007,7 +3005,9 @@ index 9086e16..abe07b0 100644
 -    w = TEXTW(m->ltsymbol);
 -    drw_setscheme(drw, scheme[SchemeNorm]);
 -    x = drw_text(drw, x, 0, w, bh, lrpad / 2, m->ltsymbol, 0);
--
++	if (!m->showbar)
++		return;
+ 
 -    if ((w = m->ww - tw - x) > bh) {
 -        drw_setscheme(drw, scheme[SchemeNorm]);
 -        drw_rect(drw, x, 0, w, bh, 1, 1);
@@ -3680,9 +3680,7 @@ index 9086e16..abe07b0 100644
 -    unsigned int n;
 -    int oh, ov, ih, iv;
 -    Client *c;
-+	unsigned int n = 0;
-+	Client *c;
- 
+-
 -    getgaps(m, &oh, &ov, &ih, &iv, &n);
 -
 -    if (n > 0) /* override layout symbol */
@@ -3697,7 +3695,9 @@ index 9086e16..abe07b0 100644
 -    static Monitor *mon = NULL;
 -    Monitor *m;
 -    XMotionEvent *ev = &e->xmotion;
--
++	unsigned int n = 0;
++	Client *c;
+ 
 -    if (ev->window != root)
 -        return;
 -    if ((m = recttomon(ev->x_root, ev->y_root, 1, 1)) != mon && mon) {
@@ -4724,11 +4724,11 @@ index 9086e16..abe07b0 100644
 +	for (c = selmon->clients; c != NULL; c = c->next) {
 +		if ((c->tags & newtag) || (c->tags & curtag))
 +			c->tags ^= curtag ^ newtag;
- 
++
 +		if (!c->tags)
 +			c->tags = newtag;
 +	}
-+
+ 
 +	//move to the swaped tag
 +	//selmon->tagset[selmon->seltags] = newtag;
 +
@@ -6077,8 +6077,7 @@ index 9086e16..abe07b0 100644
 +	}
 +
 +	free(r);
- 
--    free(r);
++
 +	if (result == (pid_t)-1)
 +		result = 0;
 +
@@ -6091,12 +6090,13 @@ index 9086e16..abe07b0 100644
 +        unsigned char *prop;
 +        pid_t ret;
  
+-    free(r);
++        if (XGetWindowProperty(dpy, w, XInternAtom(dpy, "_NET_WM_PID", 0), 0, 1, False, AnyPropertyType, &type, &format, &len, &bytes, &prop) != Success || !prop)
++               return 0;
+ 
 -    if (result == (pid_t)-1)
 -        result = 0;
 -    return result;
-+        if (XGetWindowProperty(dpy, w, XInternAtom(dpy, "_NET_WM_PID", 0), 0, 1, False, AnyPropertyType, &type, &format, &len, &bytes, &prop) != Success || !prop)
-+               return 0;
-+
 +        ret = *(pid_t*)prop;
 +        XFree(prop);
 +        result = ret;
@@ -6115,25 +6115,25 @@ index 9086e16..abe07b0 100644
 +	FILE *f;
 +	char buf[256];
 +	snprintf(buf, sizeof(buf) - 1, "/proc/%u/stat", (unsigned)p);
-+
-+	if (!(f = fopen(buf, "r")))
-+		return 0;
  
 -#if defined(__linux__)
 -    FILE *f;
 -    char buf[256];
 -    snprintf(buf, sizeof(buf) - 1, "/proc/%u/stat", (unsigned)p);
++	if (!(f = fopen(buf, "r")))
++		return 0;
++
 +	fscanf(f, "%*u %*s %*c %u", &v);
 +	fclose(f);
 +#endif /* __linux__*/
- 
--    if (!(f = fopen(buf, "r")))
--        return (pid_t)0;
++
 +#ifdef __OpenBSD__
 +	int n;
 +	kvm_t *kd;
 +	struct kinfo_proc *kp;
-+
+ 
+-    if (!(f = fopen(buf, "r")))
+-        return (pid_t)0;
 +	kd = kvm_openfiles(NULL, NULL, NULL, KVM_NO_FILES, NULL);
 +	if (!kd)
 +		return 0;
@@ -6395,7 +6395,9 @@ index 9086e16..abe07b0 100644
 +	{
 +		switch (rtype) {
 +		case STRING:
-+			strcpy(sdst, ret.addr);
++			/* all STRING resources are "#RRGGBB" char[8] buffers */
++			if (strlen(ret.addr) < 8)
++				strcpy(sdst, ret.addr);
 +			break;
 +		case INTEGER:
 +			*idst = strtoul(ret.addr, NULL, 10);
@@ -6414,7 +6416,6 @@ index 9086e16..abe07b0 100644
 -    char *resm;
 -    XrmDatabase db;
 -    ResourcePref *p;
-+	Display *display;
 +	char *resm;
 +	XrmDatabase db;
 +	ResourcePref *p;
@@ -6423,8 +6424,7 @@ index 9086e16..abe07b0 100644
 -    resm = XResourceManagerString(display);
 -    if (!resm)
 -        return;
-+	display = XOpenDisplay(NULL);
-+	resm = XResourceManagerString(display);
++	resm = XResourceManagerString(dpy);
 +	if (!resm)
 +		return;
  
@@ -6435,7 +6435,7 @@ index 9086e16..abe07b0 100644
 +	db = XrmGetStringDatabase(resm);
 +	for (p = resources; p < resources + LENGTH(resources); p++)
 +		resource_load(db, p->name, p->type, p->dst);
-+	XCloseDisplay(display);
++	XrmDestroyDatabase(db);
  }
  
  int
