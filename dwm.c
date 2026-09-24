@@ -312,11 +312,7 @@ static Client *termforwin(const Client *c);
 static pid_t winpid(Window w);
 
 /* variables */
-static const char autostartblocksh[] = "autostart_blocking.sh";
-static const char autostartsh[] = "autostart.sh";
 static const char broken[] = "broken";
-static const char dwmdir[] = "dwm";
-static const char localshare[] = ".local/share";
 static char stext[1024];
 static int statussig;
 static int statusw;
@@ -1017,8 +1013,6 @@ void
 drawbar(Monitor *m)
 {
 	int x, w, tw = 0;
-	int boxs = drw->fonts->h / 9;
-	int boxw = drw->fonts->h / 6 + 2;
 	unsigned int i, occ = 0, urg = 0;
 	Client *c;
 
@@ -1026,10 +1020,8 @@ drawbar(Monitor *m)
 		return;
 
 	/* draw status first so it can be overdrawn by tags later */
-	//if (m == selmon) { /* status is only drawn on selected monitor */
-    if (m == selmon || 1) { 
-		tw = statusw = m->ww - drawstatusbar(m, bh, stext);
-	}
+	/* status is drawn on every monitor, not just selmon */
+	tw = statusw = m->ww - drawstatusbar(m, bh, stext);
 
 	for (c = m->clients; c; c = c->next) {
 		occ |= c->tags == TAGMASK ? 0 : c->tags;
@@ -1729,83 +1721,6 @@ run(void)
 			handler[ev.type](&ev); /* call handler */
 }
 
-//void
-//runautostart(void)
-//{
-//	char *pathpfx;
-//	char *path;
-//	char *xdgdatahome;
-//	char *home;
-//	struct stat sb;
-//
-//	if ((home = getenv("HOME")) == NULL)
-//		/* this is almost impossible */
-//		return;
-//
-//	/* if $XDG_DATA_HOME is set and not empty, use $XDG_DATA_HOME/dwm,
-//	 * otherwise use ~/.local/share/dwm as autostart script directory
-//	 */
-//	xdgdatahome = getenv("XDG_DATA_HOME");
-//	if (xdgdatahome != NULL && *xdgdatahome != '\0') {
-//		/* space for path segments, separators and nul */
-//		pathpfx = ecalloc(1, strlen(xdgdatahome) + strlen(dwmdir) + 2);
-//
-//		if (sprintf(pathpfx, "%s/%s", xdgdatahome, dwmdir) <= 0) {
-//			free(pathpfx);
-//			return;
-//		}
-//	} else {
-//		/* space for path segments, separators and nul */
-//		pathpfx = ecalloc(1, strlen(home) + strlen(localshare)
-//		                     + strlen(dwmdir) + 3);
-//
-//		if (sprintf(pathpfx, "%s/%s/%s", home, localshare, dwmdir) < 0) {
-//			free(pathpfx);
-//			return;
-//		}
-//	}
-//
-//	/* check if the autostart script directory exists */
-//	if (! (stat(pathpfx, &sb) == 0 && S_ISDIR(sb.st_mode))) {
-//		/* the XDG conformant path does not exist or is no directory
-//		 * so we try ~/.dwm instead
-//		 */
-//		char *pathpfx_new = realloc(pathpfx, strlen(home) + strlen(dwmdir) + 3);
-//		if(pathpfx_new == NULL) {
-//			free(pathpfx);
-//			return;
-//		}
-//		pathpfx = pathpfx_new;
-//
-//		if (sprintf(pathpfx, "%s/.%s", home, dwmdir) <= 0) {
-//			free(pathpfx);
-//			return;
-//		}
-//	}
-//
-//	/* try the blocking script first */
-//	path = ecalloc(1, strlen(pathpfx) + strlen(autostartblocksh) + 2);
-//	if (sprintf(path, "%s/%s", pathpfx, autostartblocksh) <= 0) {
-//		free(path);
-//		free(pathpfx);
-//	}
-//
-//	if (access(path, X_OK) == 0)
-//		system(path);
-//
-//	/* now the non-blocking script */
-//	if (sprintf(path, "%s/%s", pathpfx, autostartsh) <= 0) {
-//		free(path);
-//		free(pathpfx);
-//	}
-//
-//	if (access(path, X_OK) == 0)
-//		system(strcat(path, " &"));
-//
-//	free(pathpfx);
-//	free(path);
-//}
-
 void
 runautostart(void)
 {
@@ -1976,40 +1891,6 @@ setlayout(const Arg *arg)
 	else
 		drawbar(selmon);
 }
-
-//void
-//shiftview(const Arg *arg) {
-//	Arg shifted;
-//
-//	if(arg->i > 0) /* left circular shift */
-//		shifted.ui = (selmon->tagset[selmon->seltags] << arg->i)
-//		   | (selmon->tagset[selmon->seltags] >> (LENGTH(tags) - arg->i));
-//
-//	else /* right circular shift */
-//		shifted.ui = selmon->tagset[selmon->seltags] >> (- arg->i)
-//		   | selmon->tagset[selmon->seltags] << (LENGTH(tags) + arg->i);
-//
-//	view(&shifted);
-//}
-//
-//void
-//shifttag(const Arg *arg) {
-//	Arg shifted;
-//	Client *c;
-//
-//	if (!selmon->sel)
-//		return;
-//	c = selmon->sel;
-//
-//	if (arg->i > 0) /* left circular shift */
-//		shifted.ui = (c->tags ^ (c->tags << arg->i)) 
-//			^ (c->tags >> (LENGTH(tags) - arg->i));
-//	else /* right circular shift */
-//		shifted.ui = (c->tags ^ (c->tags >> (-arg->i)))
-//			^ (c->tags << (LENGTH(tags) + arg->i));
-//
-//	toggletag(&shifted);
-//}
 
 // https://github.com/ornfelt/dwm/blob/bkp/shiftview.c
 // Or this (used below):
@@ -2372,34 +2253,6 @@ stackpos(const Arg *arg) {
 		return arg->i;
 }
 
-//void
-//tag(const Arg *arg)
-//{
-//    if (selmon->sel && arg->ui & TAGMASK) {
-//        if (mons && mons->next) {
-//            // Moving to even tag, selected mon != first mon
-//            if ((arg->ui & SCREEN_MASK) == 0 && selmon != mons) {
-//                selmon->sel->tags = arg->ui & TAGMASK;
-//                focus(NULL);
-//                arrange(selmon);
-//                // Moving to odd tag, selected mon == first mon
-//            } else if ((arg->ui & SCREEN_MASK) > 0 && selmon == mons) {
-//                selmon->sel->tags = arg->ui & TAGMASK;
-//                focus(NULL);
-//                arrange(selmon);
-//            } else {
-//                tagnextmon(arg);
-//            }
-//        } else {
-//            if (selmon->sel && arg->ui & TAGMASK) {
-//                selmon->sel->tags = arg->ui & TAGMASK;
-//                focus(NULL);
-//                arrange(selmon);
-//            }
-//        }
-//    }
-//}
-
 void
 tag(const Arg *arg)
 {
@@ -2551,11 +2404,6 @@ togglefloating(const Arg *arg)
 		selmon->sel->sfw = selmon->sel->w;
 		selmon->sel->sfh = selmon->sel->h;
 	}
-
- 	//if (selmon->sel->isfloating)
- 	//	resize(selmon->sel, selmon->sel->x, selmon->sel->y,
- 	//		//selmon->sel->w, selmon->sel->h, 0);
- 	//		900, 600, 0);
 
     if (!selmon->sel->sfx) {
         selmon->sel->x = selmon->sel->mon->mx + (selmon->sel->mon->mw - WIDTH(selmon->sel)) / 2;
