@@ -1853,7 +1853,9 @@ sendmon(Client *c, Monitor *m)
 	detach(c);
 	detachstack(c);
 	c->mon = m;
-	c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
+	/* assign tags of target monitor, without any visible scratchpad tags */
+	if (!(c->tags = m->tagset[m->seltags] & ~SPTAGMASK))
+		c->tags = 1;
 	attach(c);
 	attachstack(c);
 	if (c->isfullscreen)
@@ -1872,7 +1874,9 @@ sendmonview(Client *c, Monitor *m)
     detachstack(c);
     arrange(c->mon);
     c->mon = m;
-    c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
+    /* assign tags of target monitor, without any visible scratchpad tags */
+    if (!(c->tags = m->tagset[m->seltags] & ~SPTAGMASK))
+        c->tags = 1;
     attach(c);
     attachstack(c);
     XWarpPointer(dpy, None, root, 0, 0, 0, 0, m->wx + m->ww / 2, m->wy + m->wh / 2);
