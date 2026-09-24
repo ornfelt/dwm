@@ -954,7 +954,10 @@ drawstatusbar(Monitor *m, int bh, char* stext)
                 if (text[i] == '2') {
                     // Check if weather is hot or not
                     ptr = fopen("/home/jonas/.local/share/weatherreport", "r");
-                    if (ptr == NULL) printf("Fail to read wr...");
+                    if (ptr == NULL) {
+                        drw_clr_create(drw, &drw->scheme[ColFg], col24);
+                        continue;
+                    }
                     do{
                         ch = fgetc(ptr);
                         // Check if temp is above +20 (= hot)
