@@ -286,6 +286,7 @@ static void updatebarpos(Monitor *m);
 static void updatebars(void);
 static void updateclientlist(void);
 static int updategeom(void);
+static void updatenetwmstate(Client *c);
 static void updatenumlockmask(void);
 static void updatesizehints(Client *c);
 static void updatestatus(void);
@@ -1933,9 +1934,8 @@ void
 setfullscreen(Client *c, int fullscreen)
 {
 	if (fullscreen && !c->isfullscreen) {
-		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
-			PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
 		c->isfullscreen = 1;
+		updatenetwmstate(c);
 		c->oldstate = c->isfloating;
 		c->oldbw = c->bw;
 		c->bw = 0;
@@ -1943,9 +1943,8 @@ setfullscreen(Client *c, int fullscreen)
 		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
 		XRaiseWindow(dpy, c->win);
 	} else if (!fullscreen && c->isfullscreen){
-		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
-			PropModeReplace, (unsigned char*)0, 0);
 		c->isfullscreen = 0;
+		updatenetwmstate(c);
 		c->isfloating = c->oldstate;
 		c->bw = c->oldbw;
 		c->x = c->oldx;
@@ -1958,21 +1957,17 @@ setfullscreen(Client *c, int fullscreen)
 }
 
 void
-	 setsticky(Client *c, int sticky)
-	 {
-
-		 if(sticky && !c->issticky) {
-			 XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
-					 PropModeReplace, (unsigned char *) &netatom[NetWMSticky], 1);
-			 c->issticky = 1;
-		 } else if(!sticky && c->issticky){
-			 XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
-					 PropModeReplace, (unsigned char *)0, 0);
-			 c->issticky = 0;
-			 arrange(c->mon);
-		 }
-	 }
-
+setsticky(Client *c, int sticky)
+{
+	if (sticky && !c->issticky) {
+		c->issticky = 1;
+		updatenetwmstate(c);
+	} else if (!sticky && c->issticky) {
+		c->issticky = 0;
+		updatenetwmstate(c);
+		arrange(c->mon);
+	}
+}
 
 void
 setlayout(const Arg *arg)
@@ -2863,6 +2858,22 @@ updategeom(void)
 		selmon = wintomon(root);
 	}
 	return dirty;
+}
+
+/* Write the _NET_WM_STATE atoms dwm manages, so that setting one state
+ * does not clear the other */
+void
+updatenetwmstate(Client *c)
+{
+	Atom state[2];
+	int n = 0;
+
+	if (c->isfullscreen)
+		state[n++] = netatom[NetWMFullscreen];
+	if (c->issticky)
+		state[n++] = netatom[NetWMSticky];
+	XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
+		PropModeReplace, (unsigned char *)state, n);
 }
 
 void
