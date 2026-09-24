@@ -605,9 +605,11 @@ buttonpress(XEvent *e)
 					*s = '^';
 					if (*(++s) == 'f')
 						x += atoi(++s);
-					while (*(s++) != '^');
-					text = s;
-					s--;
+					while (*s && *s != '^')
+						s++;
+					if (!*s)
+						break; /* unterminated ^ code */
+					text = s + 1;
 				}
 			}
 		}
@@ -913,8 +915,10 @@ drawstatusbar(Monitor *m, int bh, char* stext)
                 text[i] = '\0';
                 w += TEXTW(text) - lrpad;
                 text[i] = '^';
-                if (text[++i] == 'f')
-                    w += atoi(text + ++i);
+                if (text[i + 1] == 'f') {
+                    i++;
+                    w += atoi(text + i + 1);
+                }
             } else {
                 isCode = 0;
                 text = text + i + 1;
@@ -950,7 +954,7 @@ drawstatusbar(Monitor *m, int bh, char* stext)
             drw_text(drw, x, 0, w, bh, 0, text, 0);
             x += w;
 
-            while (text[++i] != '^') {
+            while (text[++i] && text[i] != '^') {
                 if (text[i] == '2') {
                     // Check if weather is hot or not
                     ptr = fopen("/home/jonas/.local/share/weatherreport", "r");
@@ -993,6 +997,8 @@ drawstatusbar(Monitor *m, int bh, char* stext)
                     drw_clr_create(drw, &drw->scheme[ColFg], col6);
                 }
             }
+            if (!text[i])
+                break; /* unterminated ^ code */
 
             text = text + i + 1;
             i=-1;
