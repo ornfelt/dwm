@@ -2376,8 +2376,10 @@ void
 togglebars(const Arg *arg)
 {
     Monitor *m;
+    int showbar = !selmon->showbar; /* keep all bars in sync */
+
     for (m = mons; m; m = m->next) {
-        m->showbar = !m->showbar;
+        m->showbar = showbar;
         updatebarpos(m);
         XMoveResizeWindow(dpy, m->barwin, m->wx, m->by, m->ww, bh);
         arrange(m);
