@@ -1621,7 +1621,7 @@ index 7feba78..d04bec6 100644
  .BR dmenu (1),
  .BR st (1)
 diff --git a/dwm.c b/dwm.c
-index 9086e16..2aab93f 100644
+index 9086e16..6146951 100644
 --- a/dwm.c
 +++ b/dwm.c
 @@ -29,6 +29,7 @@
@@ -4311,7 +4311,7 @@ index 9086e16..2aab93f 100644
  {
      system("killall -q dwmblocks; dwmblocks &");
  }
-@@ -1725,44 +1820,46 @@ runAutostart(void)
+@@ -1725,44 +1820,48 @@ runAutostart(void)
  void
  scan(void)
  {
@@ -4381,7 +4381,9 @@ index 9086e16..2aab93f 100644
 +	detach(c);
 +	detachstack(c);
 +	c->mon = m;
-+	c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
++	/* assign tags of target monitor, without any visible scratchpad tags */
++	if (!(c->tags = m->tagset[m->seltags] & ~SPTAGMASK))
++		c->tags = 1;
 +	attach(c);
 +	attachstack(c);
 +	if (c->isfullscreen)
@@ -4391,8 +4393,14 @@ index 9086e16..2aab93f 100644
  }
  
  void
-@@ -1778,7 +1875,7 @@ sendmonview(Client *c, Monitor *m)
-     c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
+@@ -1775,10 +1874,12 @@ sendmonview(Client *c, Monitor *m)
+     detachstack(c);
+     arrange(c->mon);
+     c->mon = m;
+-    c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
++    /* assign tags of target monitor, without any visible scratchpad tags */
++    if (!(c->tags = m->tagset[m->seltags] & ~SPTAGMASK))
++        c->tags = 1;
      attach(c);
      attachstack(c);
 -    XWarpPointer(dpy, None, m->barwin, 0, 0, 0, 0, m->mw / 2, m->mh / 2);
@@ -4400,7 +4408,7 @@ index 9086e16..2aab93f 100644
      arrange(m);
      focus(c);
      restack(m);
-@@ -1787,318 +1884,614 @@ sendmonview(Client *c, Monitor *m)
+@@ -1787,318 +1888,614 @@ sendmonview(Client *c, Monitor *m)
  void
  setclientstate(Client *c, long state)
  {
@@ -4739,11 +4747,11 @@ index 9086e16..2aab93f 100644
 +	for (c = selmon->clients; c != NULL; c = c->next) {
 +		if ((c->tags & newtag) || (c->tags & curtag))
 +			c->tags ^= curtag ^ newtag;
- 
++
 +		if (!c->tags)
 +			c->tags = newtag;
 +	}
-+
+ 
 +	//move to the swaped tag
 +	//selmon->tagset[selmon->seltags] = newtag;
 +
@@ -5251,7 +5259,7 @@ index 9086e16..2aab93f 100644
  {
      if (selmon->sel && arg->ui & TAGMASK) {
          selmon->sel->tags = arg->ui & TAGMASK;
-@@ -2109,439 +2502,493 @@ tagview(const Arg *arg)
+@@ -2109,439 +2506,493 @@ tagview(const Arg *arg)
  }
  
  void
@@ -6045,7 +6053,7 @@ index 9086e16..2aab93f 100644
      }
  
      selmon->seltags ^= 1; /* toggle sel tagset */
-@@ -2554,135 +3001,163 @@ view(const Arg *arg)
+@@ -2554,135 +3005,165 @@ view(const Arg *arg)
  pid_t
  winpid(Window w)
  {
@@ -6107,18 +6115,18 @@ index 9086e16..2aab93f 100644
 +        unsigned long len, bytes;
 +        unsigned char *prop;
 +        pid_t ret;
- 
--    free(r);
++
 +        if (XGetWindowProperty(dpy, w, XInternAtom(dpy, "_NET_WM_PID", 0), 0, 1, False, AnyPropertyType, &type, &format, &len, &bytes, &prop) != Success || !prop)
 +               return 0;
+ 
+-    free(r);
++        ret = *(pid_t*)prop;
++        XFree(prop);
++        result = ret;
  
 -    if (result == (pid_t)-1)
 -        result = 0;
 -    return result;
-+        ret = *(pid_t*)prop;
-+        XFree(prop);
-+        result = ret;
-+
 +#endif /* __OpenBSD__ */
 +	return result;
  }
@@ -6131,27 +6139,29 @@ index 9086e16..2aab93f 100644
 +
 +#ifdef __linux__
 +	FILE *f;
-+	char buf[256];
++	char buf[256], *s;
 +	snprintf(buf, sizeof(buf) - 1, "/proc/%u/stat", (unsigned)p);
++
++	if (!(f = fopen(buf, "r")))
++		return 0;
  
 -#if defined(__linux__)
 -    FILE *f;
 -    char buf[256];
 -    snprintf(buf, sizeof(buf) - 1, "/proc/%u/stat", (unsigned)p);
-+	if (!(f = fopen(buf, "r")))
-+		return 0;
-+
-+	fscanf(f, "%*u %*s %*c %u", &v);
++	/* comm may contain spaces and ')', so parse after the last ')' */
++	if (fgets(buf, sizeof(buf), f) && (s = strrchr(buf, ')')))
++		sscanf(s + 1, " %*c %u", &v);
 +	fclose(f);
 +#endif /* __linux__*/
-+
+ 
+-    if (!(f = fopen(buf, "r")))
+-        return (pid_t)0;
 +#ifdef __OpenBSD__
 +	int n;
 +	kvm_t *kd;
 +	struct kinfo_proc *kp;
- 
--    if (!(f = fopen(buf, "r")))
--        return (pid_t)0;
++
 +	kd = kvm_openfiles(NULL, NULL, NULL, KVM_NO_FILES, NULL);
 +	if (!kd)
 +		return 0;
@@ -6290,7 +6300,7 @@ index 9086e16..2aab93f 100644
  }
  
  /* There's no way to check accesses to destroyed windows, thus those cases are
-@@ -2691,25 +3166,25 @@ wintomon(Window w)
+@@ -2691,25 +3172,25 @@ wintomon(Window w)
  int
  xerror(Display *dpy, XErrorEvent *ee)
  {
@@ -6330,7 +6340,7 @@ index 9086e16..2aab93f 100644
  }
  
  /* Startup Error handler to check if another window manager
-@@ -2717,107 +3192,103 @@ xerrordummy(Display *dpy, XErrorEvent *ee)
+@@ -2717,107 +3198,103 @@ xerrordummy(Display *dpy, XErrorEvent *ee)
  int
  xerrorstart(Display *dpy, XErrorEvent *ee)
  {
@@ -6767,7 +6777,7 @@ index c8b1dcd..8e26a51 100644
 +	return p;
  }
 diff --git a/vanitygaps.c b/vanitygaps.c
-index 7b64fd2..5acce38 100644
+index 7b64fd2..efbbe03 100644
 --- a/vanitygaps.c
 +++ b/vanitygaps.c
 @@ -1,53 +1,60 @@
@@ -6855,7 +6865,7 @@ index 7b64fd2..5acce38 100644
  }
  
  static void
-@@ -57,135 +64,143 @@ togglebgaps(const Arg *arg)
+@@ -57,135 +64,140 @@ togglebgaps(const Arg *arg)
      arrange(NULL);
  }
  
@@ -6880,6 +6890,17 @@ index 7b64fd2..5acce38 100644
 +	setgaps(
 +		selmon->gappoh + arg->i,
 +		selmon->gappov + arg->i,
++		selmon->gappih + arg->i,
++		selmon->gappiv + arg->i
++	);
++}
++
++void
++incrigaps(const Arg *arg)
++{
++	setgaps(
++		selmon->gappoh,
++		selmon->gappov,
 +		selmon->gappih + arg->i,
 +		selmon->gappiv + arg->i
 +	);
@@ -6951,18 +6972,6 @@ index 7b64fd2..5acce38 100644
 -/* 	); */
 -/* } */
 +void
-+incrigaps(const Arg *arg)
-+{
-+	setgaps(
-+		selmon->gappoh,
-+		selmon->gappov,
-+		selmon->gappih + arg->i,
-+		selmon->gappiv + arg->i
-+	);
-+}
- 
--static void
-+void
 +incrogaps(const Arg *arg)
 +{
 +	setgaps(
@@ -6972,7 +6981,8 @@ index 7b64fd2..5acce38 100644
 +		selmon->gappiv
 +	);
 +}
-+
+ 
+-static void
 +void
 +incrohgaps(const Arg *arg)
 +{
@@ -7040,9 +7050,6 @@ index 7b64fd2..5acce38 100644
 -    /* if (smartgaps && n == 1) { */
      if (n == 1 && strstr(nexttiled(m->clients)->name, "Mozilla Firefox") != NULL && !browsergaps) {
          oe = 0; // outer gaps disabled when only one client (and it's Firefox)
-+        if (TAGMASK == (1 << 8)){
-+            setgaps(gappoh, gappov, gappih, gappiv);
-+        }
      }
  
 -    if (TAGMASK == (1 << 8)){
@@ -7107,7 +7114,7 @@ index 7b64fd2..5acce38 100644
  }
  
  /***
-@@ -196,360 +211,627 @@ getfacts(Monitor *m, int msize, int ssize, float *mf, float *sf, int *mr, int *s
+@@ -196,360 +208,627 @@ getfacts(Monitor *m, int msize, int ssize, float *mf, float *sf, int *mr, int *s
   * Bottomstack layout + gaps
   * https://dwm.suckless.org/patches/bottomstack/
   */
@@ -7758,7 +7765,7 @@ index 7b64fd2..5acce38 100644
 - * Default tile layout + gaps
 + * Gappless grid layout + gaps (ironically)
 + * https://dwm.suckless.org/patches/gaplessgrid/
-+ */
+  */
 +void
 +gaplessgrid(Monitor *m)
 +{
@@ -7807,14 +7814,40 @@ index 7b64fd2..5acce38 100644
 +		}
 +	}
 +}
-+
+ 
+-static void
+-tile(Monitor *m)
 +/*
 + * Gridmode layout + gaps
 + * https://dwm.suckless.org/patches/gridmode/
 + */
 +void
 +grid(Monitor *m)
-+{
+ {
+-    unsigned int i, n;
+-    int mx = 0, my = 0, mh = 0, mw = 0;
+-    int sx = 0, sy = 0, sh = 0, sw = 0;
+-    float mfacts, sfacts;
+-    int mrest, srest;
+-    Client *c;
+-
+-    int oh, ov, ih, iv;
+-    getgaps(m, &oh, &ov, &ih, &iv, &n);
+-
+-    if (n == 0)
+-        return;
+-
+-    sx = mx = m->wx + ov;
+-    sy = my = m->wy + oh;
+-    mh = m->wh - 2*oh - ih * (MIN(n, m->nmaster) - 1);
+-    sh = m->wh - 2*oh - ih * (n - m->nmaster - 1);
+-    sw = mw = m->ww - 2*ov;
+-
+-    if (m->nmaster && n > m->nmaster) {
+-        sw = (mw - iv) * (1 - m->mfact);
+-        mw = (mw - iv) * m->mfact;
+-        sx = mx + mw + iv;
+-    }
 +	unsigned int i, n;
 +	int cx, cy, cw, ch, cc, cr, chrest, cwrest, cols, rows;
 +	int oh, ov, ih, iv;
@@ -7841,7 +7874,8 @@ index 7b64fd2..5acce38 100644
 +		resize(c, cx, cy, cw + (cc < cwrest ? 1 : 0) - 2*c->bw, ch + (cr < chrest ? 1 : 0) - 2*c->bw, False);
 +	}
 +}
-+
+ 
+-    getfacts(m, mh, sh, &mfacts, &sfacts, &mrest, &srest);
 +/*
 + * Horizontal grid layout + gaps
 + * https://dwm.suckless.org/patches/horizgrid/
@@ -7906,11 +7940,19 @@ index 7b64fd2..5acce38 100644
 +			sx += WIDTH(c) + iv;
 +		}
 +}
-+
+ 
+-    for (i = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++)
+-        if (i < m->nmaster) {
+-            resize(c, mx, my, mw - (2*c->bw), (mh / mfacts) + (i < mrest ? 1 : 0) - (2*c->bw), 0);
+-            my += HEIGHT(c) + ih;
+-        } else {
+-            resize(c, sx, sy, sw - (2*c->bw), (sh / sfacts) + ((i - m->nmaster) < srest ? 1 : 0) - (2*c->bw), 0);
+-            sy += HEIGHT(c) + ih;
+-        }
 +/*
 + * nrowgrid layout + gaps
 + * https://dwm.suckless.org/patches/nrowgrid/
-  */
++ */
 +void
 +nrowgrid(Monitor *m)
 +{
@@ -7964,48 +8006,13 @@ index 7b64fd2..5acce38 100644
 +		resize(c, cx, cy, cw - (2*c->bw), ch - (2*c->bw), 0);
 +	}
 +}
- 
++
 +/*
 + * Default tile layout + gaps
 + */
- static void
- tile(Monitor *m)
- {
--    unsigned int i, n;
--    int mx = 0, my = 0, mh = 0, mw = 0;
--    int sx = 0, sy = 0, sh = 0, sw = 0;
--    float mfacts, sfacts;
--    int mrest, srest;
--    Client *c;
--
--    int oh, ov, ih, iv;
--    getgaps(m, &oh, &ov, &ih, &iv, &n);
--
--    if (n == 0)
--        return;
--
--    sx = mx = m->wx + ov;
--    sy = my = m->wy + oh;
--    mh = m->wh - 2*oh - ih * (MIN(n, m->nmaster) - 1);
--    sh = m->wh - 2*oh - ih * (n - m->nmaster - 1);
--    sw = mw = m->ww - 2*ov;
--
--    if (m->nmaster && n > m->nmaster) {
--        sw = (mw - iv) * (1 - m->mfact);
--        mw = (mw - iv) * m->mfact;
--        sx = mx + mw + iv;
--    }
--
--    getfacts(m, mh, sh, &mfacts, &sfacts, &mrest, &srest);
--
--    for (i = 0, c = nexttiled(m->clients); c; c = nexttiled(c->next), i++)
--        if (i < m->nmaster) {
--            resize(c, mx, my, mw - (2*c->bw), (mh / mfacts) + (i < mrest ? 1 : 0) - (2*c->bw), 0);
--            my += HEIGHT(c) + ih;
--        } else {
--            resize(c, sx, sy, sw - (2*c->bw), (sh / sfacts) + ((i - m->nmaster) < srest ? 1 : 0) - (2*c->bw), 0);
--            sy += HEIGHT(c) + ih;
--        }
++static void
++tile(Monitor *m)
++{
 +	unsigned int i, n;
 +	int oh, ov, ih, iv;
 +	int mx = 0, my = 0, mh = 0, mw = 0;

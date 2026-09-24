@@ -605,7 +605,7 @@ index bdbf950..fbfec02 100644
  /* Cursor abstraction */
  Cur *drw_cur_create(Drw *drw, int shape);
 diff --git a/dwm.c b/dwm.c
-index 1ce4a38..2aab93f 100644
+index 1ce4a38..6146951 100644
 --- a/dwm.c
 +++ b/dwm.c
 @@ -62,8 +62,8 @@
@@ -1158,8 +1158,14 @@ index 1ce4a38..2aab93f 100644
  				continue;
  			lasttime = ev.xmotion.time;
  
-@@ -2038,6 +1856,8 @@ sendmon(Client *c, Monitor *m)
- 	c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
+@@ -2035,9 +1853,13 @@ sendmon(Client *c, Monitor *m)
+ 	detach(c);
+ 	detachstack(c);
+ 	c->mon = m;
+-	c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
++	/* assign tags of target monitor, without any visible scratchpad tags */
++	if (!(c->tags = m->tagset[m->seltags] & ~SPTAGMASK))
++		c->tags = 1;
  	attach(c);
  	attachstack(c);
 +	if (c->isfullscreen)
@@ -1167,8 +1173,14 @@ index 1ce4a38..2aab93f 100644
  	focus(NULL);
  	arrange(NULL);
  }
-@@ -2055,7 +1875,7 @@ sendmonview(Client *c, Monitor *m)
-     c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
+@@ -2052,10 +1874,12 @@ sendmonview(Client *c, Monitor *m)
+     detachstack(c);
+     arrange(c->mon);
+     c->mon = m;
+-    c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
++    /* assign tags of target monitor, without any visible scratchpad tags */
++    if (!(c->tags = m->tagset[m->seltags] & ~SPTAGMASK))
++        c->tags = 1;
      attach(c);
      attachstack(c);
 -    XWarpPointer(dpy, None, m->barwin, 0, 0, 0, 0, m->mw / 2, m->mh / 2);
@@ -1176,7 +1188,7 @@ index 1ce4a38..2aab93f 100644
      arrange(m);
      focus(c);
      restack(m);
-@@ -2098,12 +1918,10 @@ sendevent(Client *c, Atom proto)
+@@ -2098,12 +1922,10 @@ sendevent(Client *c, Atom proto)
  void
  setfocus(Client *c)
  {
@@ -1192,7 +1204,7 @@ index 1ce4a38..2aab93f 100644
  	sendevent(c, wmatom[WMTakeFocus]);
  }
  
-@@ -2166,6 +1984,188 @@ setlayout(const Arg *arg)
+@@ -2166,6 +1988,188 @@ setlayout(const Arg *arg)
  		drawbar(selmon);
  }
  
@@ -1381,7 +1393,7 @@ index 1ce4a38..2aab93f 100644
  void
  setcfact(const Arg *arg) {
  	float f;
-@@ -2379,20 +2379,76 @@ stackpos(const Arg *arg) {
+@@ -2379,20 +2383,76 @@ stackpos(const Arg *arg) {
  		return arg->i;
  }
  
@@ -1463,7 +1475,7 @@ index 1ce4a38..2aab93f 100644
          selmon->sel->tags = arg->ui & TAGMASK;
          focus(NULL);
          arrange(selmon);
-@@ -2416,6 +2472,51 @@ tagmonview(const Arg *arg)
+@@ -2416,6 +2476,51 @@ tagmonview(const Arg *arg)
      sendmonview(selmon->sel, dirtomon(arg->i));
  }
  
@@ -1515,7 +1527,7 @@ index 1ce4a38..2aab93f 100644
  void
  togglebar(const Arg *arg)
  {
-@@ -2425,6 +2526,18 @@ togglebar(const Arg *arg)
+@@ -2425,6 +2530,18 @@ togglebar(const Arg *arg)
  	arrange(selmon);
  }
  
@@ -1534,7 +1546,7 @@ index 1ce4a38..2aab93f 100644
  void
  togglefloating(const Arg *arg)
  {
-@@ -2433,6 +2546,7 @@ togglefloating(const Arg *arg)
+@@ -2433,6 +2550,7 @@ togglefloating(const Arg *arg)
  	if (selmon->sel->isfullscreen) /* no support for fullscreen windows */
  		return;
  	selmon->sel->isfloating = !selmon->sel->isfloating || selmon->sel->isfixed;
@@ -1542,7 +1554,7 @@ index 1ce4a38..2aab93f 100644
  	if (selmon->sel->isfloating)
  		/* restore last known float dimensions */
  		resize(selmon->sel, selmon->sel->sfx, selmon->sel->sfy,
-@@ -2444,6 +2558,17 @@ togglefloating(const Arg *arg)
+@@ -2444,6 +2562,17 @@ togglefloating(const Arg *arg)
  		selmon->sel->sfw = selmon->sel->w;
  		selmon->sel->sfh = selmon->sel->h;
  	}
@@ -1560,7 +1572,7 @@ index 1ce4a38..2aab93f 100644
  	arrange(selmon);
  }
  
-@@ -2642,11 +2767,11 @@ updategeom(void)
+@@ -2642,11 +2771,11 @@ updategeom(void)
  
  #ifdef XINERAMA
  	if (XineramaIsActive(dpy)) {
@@ -1577,7 +1589,7 @@ index 1ce4a38..2aab93f 100644
  
  		for (n = 0, m = mons; m; m = m->next, n++);
  		/* only consider unique geometries as separate screens */
-@@ -2665,6 +2790,29 @@ updategeom(void)
+@@ -2665,6 +2794,29 @@ updategeom(void)
  			else
  				mons = createmon();
  		}
@@ -1607,7 +1619,7 @@ index 1ce4a38..2aab93f 100644
  		for (i = 0, m = mons; i < nn && m; m = m->next, i++)
  			if (i >= n
  			|| unique[i].x_org != m->mx || unique[i].y_org != m->my
-@@ -2778,7 +2926,7 @@ updatestatus(void)
+@@ -2778,7 +2930,7 @@ updatestatus(void)
  {
  	if (!gettextprop(root, XA_WM_NAME, stext, sizeof(stext)))
  		strcpy(stext, "dwm-"VERSION);
@@ -1616,7 +1628,7 @@ index 1ce4a38..2aab93f 100644
  }
  
  void
-@@ -2827,16 +2975,27 @@ updatewmhints(Client *c)
+@@ -2827,16 +2979,27 @@ updatewmhints(Client *c)
  void
  view(const Arg *arg)
  {
@@ -1652,7 +1664,7 @@ index 1ce4a38..2aab93f 100644
  }
  
  pid_t
-@@ -2854,8 +3013,10 @@ winpid(Window w)
+@@ -2854,8 +3017,10 @@ winpid(Window w)
  	xcb_res_query_client_ids_cookie_t c = xcb_res_query_client_ids(xcon, 1, &spec);
  	xcb_res_query_client_ids_reply_t *r = xcb_res_query_client_ids_reply(xcon, c, &e);
  
@@ -1664,7 +1676,25 @@ index 1ce4a38..2aab93f 100644
  
  	xcb_res_client_id_value_iterator_t i = xcb_res_query_client_ids_ids_iterator(r);
  	for (; i.rem; xcb_res_client_id_value_next(&i)) {
-@@ -3070,7 +3231,9 @@ resource_load(XrmDatabase db, char *name, enum resource_type rtype, void *dst)
+@@ -2899,13 +3064,15 @@ getparentprocess(pid_t p)
+ 
+ #ifdef __linux__
+ 	FILE *f;
+-	char buf[256];
++	char buf[256], *s;
+ 	snprintf(buf, sizeof(buf) - 1, "/proc/%u/stat", (unsigned)p);
+ 
+ 	if (!(f = fopen(buf, "r")))
+ 		return 0;
+ 
+-	fscanf(f, "%*u %*s %*c %u", &v);
++	/* comm may contain spaces and ')', so parse after the last ')' */
++	if (fgets(buf, sizeof(buf), f) && (s = strrchr(buf, ')')))
++		sscanf(s + 1, " %*c %u", &v);
+ 	fclose(f);
+ #endif /* __linux__*/
+ 
+@@ -3070,7 +3237,9 @@ resource_load(XrmDatabase db, char *name, enum resource_type rtype, void *dst)
  	{
  		switch (rtype) {
  		case STRING:
@@ -1675,7 +1705,7 @@ index 1ce4a38..2aab93f 100644
  			break;
  		case INTEGER:
  			*idst = strtoul(ret.addr, NULL, 10);
-@@ -3085,20 +3248,18 @@ resource_load(XrmDatabase db, char *name, enum resource_type rtype, void *dst)
+@@ -3085,20 +3254,18 @@ resource_load(XrmDatabase db, char *name, enum resource_type rtype, void *dst)
  void
  load_xresources(void)
  {
@@ -1786,18 +1816,23 @@ index 7905a6d..0000000
 -    }
 -}
 diff --git a/vanitygaps.c b/vanitygaps.c
-index 6f2407d..5acce38 100644
+index 6f2407d..efbbe03 100644
 --- a/vanitygaps.c
 +++ b/vanitygaps.c
-@@ -162,6 +162,7 @@ getgaps(Monitor *m, int *oh, int *ov, int *ih, int *iv, unsigned int *nc)
+@@ -162,11 +162,9 @@ getgaps(Monitor *m, int *oh, int *ov, int *ih, int *iv, unsigned int *nc)
  	if (smartgaps && n == 1) {
  		oe = 0; // outer gaps disabled when only one client
  	}
 +
      if (n == 1 && strstr(nexttiled(m->clients)->name, "Mozilla Firefox") != NULL && !browsergaps) {
          oe = 0; // outer gaps disabled when only one client (and it's Firefox)
-         if (TAGMASK == (1 << 8)){
-@@ -484,153 +485,91 @@ deck(Monitor *m)
+-        if (TAGMASK == (1 << 8)){
+-            setgaps(gappoh, gappov, gappih, gappiv);
+-        }
+     }
+ 
+ 	*oh = m->gappoh*oe; // outer horizontal gap
+@@ -484,153 +482,91 @@ deck(Monitor *m)
   * Fibonacci layout + gaps
   * https://dwm.suckless.org/patches/fibonacci/
   */
@@ -1946,14 +1981,15 @@ index 6f2407d..5acce38 100644
 -                nw = m->ww - nw - iv - 2*ov;
 -            i++;
 -        }
+-
+-        resize(c, nx, ny, nw - (2*c->bw), nh - (2*c->bw), False);
+-    }
 +	unsigned int i, n;
 +	int nx, ny, nw, nh;
 +	int oh, ov, ih, iv;
 +	int nv, hrest = 0, wrest = 0, r = 1;
 +	Client *c;
- 
--        resize(c, nx, ny, nw - (2*c->bw), nh - (2*c->bw), False);
--    }
++
 +	getgaps(m, &oh, &ov, &ih, &iv, &n);
 +	if (n == 0)
 +		return;
