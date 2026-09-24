@@ -914,8 +914,14 @@ drawstatusbar(Monitor *m, int bh, char* stext)
     len = strlen(stext) + 1 ;
     if (!(text = (char*) malloc(sizeof(char)*len)))
         die("malloc");
-    p = text;
     memcpy(text, stext, len);
+
+    /* strip the signal bytes that mark clickable status blocks */
+    for (s = p = text; *s; s++)
+        if ((unsigned char)*s >= ' ')
+            *p++ = *s;
+    *p = '\0';
+    p = text;
 
     /* compute width of the status text */
     w = 0;
