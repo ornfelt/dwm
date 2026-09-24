@@ -3064,13 +3064,15 @@ getparentprocess(pid_t p)
 
 #ifdef __linux__
 	FILE *f;
-	char buf[256];
+	char buf[256], *s;
 	snprintf(buf, sizeof(buf) - 1, "/proc/%u/stat", (unsigned)p);
 
 	if (!(f = fopen(buf, "r")))
 		return 0;
 
-	fscanf(f, "%*u %*s %*c %u", &v);
+	/* comm may contain spaces and ')', so parse after the last ')' */
+	if (fgets(buf, sizeof(buf), f) && (s = strrchr(buf, ')')))
+		sscanf(s + 1, " %*c %u", &v);
 	fclose(f);
 #endif /* __linux__*/
 
