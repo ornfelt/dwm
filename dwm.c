@@ -2391,24 +2391,26 @@ togglefloating(const Arg *arg)
 		return;
 	if (selmon->sel->isfullscreen) /* no support for fullscreen windows */
 		return;
-	selmon->sel->isfloating = !selmon->sel->isfloating || selmon->sel->isfixed;
+	Client *c = selmon->sel;
 
-	if (selmon->sel->isfloating)
+	c->isfloating = !c->isfloating || c->isfixed;
+
+	if (c->isfloating) {
+		/* center if never floated, or if the stored geometry is on
+		 * another monitor (the client was moved since) */
+		if (!c->sfx || recttomon(c->sfx, c->sfy, c->sfw, c->sfh) != c->mon) {
+			c->sfx = c->mon->mx + (c->mon->mw - c->sfw - 2 * c->bw) / 2;
+			c->sfy = c->mon->my + (c->mon->mh - c->sfh - 2 * c->bw) / 2;
+		}
 		/* restore last known float dimensions */
-		resize(selmon->sel, selmon->sel->sfx, selmon->sel->sfy,
-		       selmon->sel->sfw, selmon->sel->sfh, False);
-	else {
+		resize(c, c->sfx, c->sfy, c->sfw, c->sfh, False);
+	} else {
 		/* save last known float dimensions */
-		selmon->sel->sfx = selmon->sel->x;
-		selmon->sel->sfy = selmon->sel->y;
-		selmon->sel->sfw = selmon->sel->w;
-		selmon->sel->sfh = selmon->sel->h;
+		c->sfx = c->x;
+		c->sfy = c->y;
+		c->sfw = c->w;
+		c->sfh = c->h;
 	}
-
-    if (!selmon->sel->sfx) {
-        selmon->sel->x = selmon->sel->mon->mx + (selmon->sel->mon->mw - WIDTH(selmon->sel)) / 2;
-        selmon->sel->y = selmon->sel->mon->my + (selmon->sel->mon->mh - HEIGHT(selmon->sel)) / 2;
-    }
 
 	arrange(selmon);
 }
