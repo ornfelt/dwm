@@ -1620,7 +1620,7 @@ index 7feba78..d04bec6 100644
  .BR dmenu (1),
  .BR st (1)
 diff --git a/dwm.c b/dwm.c
-index 9086e16..0ea57e5 100644
+index 9086e16..abe07b0 100644
 --- a/dwm.c
 +++ b/dwm.c
 @@ -29,6 +29,7 @@
@@ -3680,7 +3680,9 @@ index 9086e16..0ea57e5 100644
 -    unsigned int n;
 -    int oh, ov, ih, iv;
 -    Client *c;
--
++	unsigned int n = 0;
++	Client *c;
+ 
 -    getgaps(m, &oh, &ov, &ih, &iv, &n);
 -
 -    if (n > 0) /* override layout symbol */
@@ -3695,9 +3697,7 @@ index 9086e16..0ea57e5 100644
 -    static Monitor *mon = NULL;
 -    Monitor *m;
 -    XMotionEvent *ev = &e->xmotion;
-+	unsigned int n = 0;
-+	Client *c;
- 
+-
 -    if (ev->window != root)
 -        return;
 -    if ((m = recttomon(ev->x_root, ev->y_root, 1, 1)) != mon && mon) {
@@ -4724,14 +4724,14 @@ index 9086e16..0ea57e5 100644
 +	for (c = selmon->clients; c != NULL; c = c->next) {
 +		if ((c->tags & newtag) || (c->tags & curtag))
 +			c->tags ^= curtag ^ newtag;
-+
+ 
 +		if (!c->tags)
 +			c->tags = newtag;
 +	}
 +
 +	//move to the swaped tag
 +	//selmon->tagset[selmon->seltags] = newtag;
- 
++
 +	focus(NULL);
 +	arrange(selmon);
 +}
@@ -5139,14 +5139,14 @@ index 9086e16..0ea57e5 100644
 +        // Moving to even tag, selected mon != first mon
 +        if ((arg->ui & SCREEN_MASK) == 0 && selmon != mons) {
 +            selmon->sel->tags = arg->ui & TAGMASK;
-+        }
+         }
 +        // Moving to odd tag, selected mon == first mon
 +        else if ((arg->ui & SCREEN_MASK) > 0 && selmon == mons) {
 +            selmon->sel->tags = arg->ui & TAGMASK;
 +        } else {
 +            tagnextmon(arg);
 +            return;
-         }
++        }
 +    } else {
 +        selmon->sel->tags = arg->ui & TAGMASK;
      }
@@ -5236,7 +5236,7 @@ index 9086e16..0ea57e5 100644
  {
      if (selmon->sel && arg->ui & TAGMASK) {
          selmon->sel->tags = arg->ui & TAGMASK;
-@@ -2109,439 +2501,515 @@ tagview(const Arg *arg)
+@@ -2109,439 +2501,493 @@ tagview(const Arg *arg)
  }
  
  void
@@ -5666,7 +5666,7 @@ index 9086e16..0ea57e5 100644
 -        Client *c;
 -        Monitor *m;
 +        Client *c, *next_client;
-+        Monitor *m, *primary, *secondary, *current_monitor;
++        Monitor *m, *primary, *secondary;
          XineramaScreenInfo *info = XineramaQueryScreens(dpy, &nn);
          XineramaScreenInfo *unique = NULL;
  
@@ -5698,6 +5698,13 @@ index 9086e16..0ea57e5 100644
 -                    m->mw = m->ww = unique[i].width;
 -                    m->mh = m->wh = unique[i].height;
 -                    updatebarpos(m);
+-                }
+-        } else { /* less monitors available nn < n */
+-            for (i = nn; i < n; i++) {
+-                for (m = mons; m && m->next; m = m->next);
+-                while ((c = m->clients)) {
+-                    dirty = 1;
+-                    m->clients = c->next;
 +		for (n = 0, m = mons; m; m = m->next, n++);
 +		/* only consider unique geometries as separate screens */
 +		unique = ecalloc(nn, sizeof(XineramaScreenInfo));
@@ -5716,54 +5723,26 @@ index 9086e16..0ea57e5 100644
 +				mons = createmon();
 +		}
 +
-+        /* Logic for moving clients */
-+        if (nn == 2) {
-+            /* Case with exactly two monitors: Move even-tagged clients */
++        /* Logic for moving clients: only when monitors were added.
++         * Odd tags live on the first monitor and even tags on the second,
++         * so with two or more monitors move even-tagged clients over. */
++        if (nn > n && nn >= 2) {
 +            primary = mons;         /* First monitor */
 +            secondary = mons->next; /* Second monitor */
 +
-+            if (primary && secondary) {
-+                for (c = primary->clients; c; c = next_client) {
-+                    next_client = c->next;
++            for (c = primary->clients; c; c = next_client) {
++                next_client = c->next;
 +
-+                    /* Check if the client belongs to an even tag */
-+                    if (c->tags & 0b010101010) { /* Even tags: 2, 4, 6, 8 */
-+                        detach(c);               /* Detach from primary monitor */
-+                        detachstack(c);
-+
-+                        c->mon = secondary;     /* Assign to secondary monitor */
-+                        attach(c);              /* Attach to secondary monitor */
-+                        attachstack(c);
-+                    }
-                 }
--        } else { /* less monitors available nn < n */
--            for (i = nn; i < n; i++) {
--                for (m = mons; m && m->next; m = m->next);
--                while ((c = m->clients)) {
--                    dirty = 1;
--                    m->clients = c->next;
-+            }
-+        } else if (nn > 2) {
-+            /* Case with more than two monitors: Move clients cyclically */
-+            for (m = mons; m; m = m->next) {
-+                current_monitor = m; /* Start with the current monitor */
-+
-+                for (c = current_monitor->clients; c; c = next_client) {
-+                    next_client = c->next;
-+
-+                    /* Determine the next monitor cyclically */
-+                    Monitor *next_monitor = current_monitor->next ? current_monitor->next : mons;
-+
-+                    detach(c);               /* Detach client from current monitor */
++                /* Check if the client belongs to an even tag */
++                if (c->tags & 0x0AA) {   /* Even tags: 2, 4, 6, 8 */
++                    detach(c);           /* Detach from primary monitor */
                      detachstack(c);
 -                    c->mon = mons;
 -                    attach(c);
 +
-+                    c->mon = next_monitor;   /* Assign client to the next monitor */
-+                    attach(c);               /* Attach to the next monitor */
++                    c->mon = secondary;  /* Assign to secondary monitor */
++                    attach(c);           /* Attach to secondary monitor */
                      attachstack(c);
-+
-+                    current_monitor = next_monitor; /* Update current monitor */
                  }
 -                if (m == selmon)
 -                    selmon = mons;
@@ -6050,7 +6029,7 @@ index 9086e16..0ea57e5 100644
      }
  
      selmon->seltags ^= 1; /* toggle sel tagset */
-@@ -2554,135 +3022,161 @@ view(const Arg *arg)
+@@ -2554,135 +3000,161 @@ view(const Arg *arg)
  pid_t
  winpid(Window w)
  {
@@ -6098,30 +6077,30 @@ index 9086e16..0ea57e5 100644
 +	}
 +
 +	free(r);
-+
+ 
+-    free(r);
 +	if (result == (pid_t)-1)
 +		result = 0;
 +
 +#endif /* __linux__ */
- 
--    free(r);
++
 +#ifdef __OpenBSD__
 +        Atom type;
 +        int format;
 +        unsigned long len, bytes;
 +        unsigned char *prop;
 +        pid_t ret;
-+
+ 
+-    if (result == (pid_t)-1)
+-        result = 0;
+-    return result;
 +        if (XGetWindowProperty(dpy, w, XInternAtom(dpy, "_NET_WM_PID", 0), 0, 1, False, AnyPropertyType, &type, &format, &len, &bytes, &prop) != Success || !prop)
 +               return 0;
 +
 +        ret = *(pid_t*)prop;
 +        XFree(prop);
 +        result = ret;
- 
--    if (result == (pid_t)-1)
--        result = 0;
--    return result;
++
 +#endif /* __OpenBSD__ */
 +	return result;
  }
@@ -6136,19 +6115,28 @@ index 9086e16..0ea57e5 100644
 +	FILE *f;
 +	char buf[256];
 +	snprintf(buf, sizeof(buf) - 1, "/proc/%u/stat", (unsigned)p);
++
++	if (!(f = fopen(buf, "r")))
++		return 0;
  
 -#if defined(__linux__)
 -    FILE *f;
 -    char buf[256];
 -    snprintf(buf, sizeof(buf) - 1, "/proc/%u/stat", (unsigned)p);
-+	if (!(f = fopen(buf, "r")))
-+		return 0;
- 
--    if (!(f = fopen(buf, "r")))
--        return (pid_t)0;
 +	fscanf(f, "%*u %*s %*c %u", &v);
 +	fclose(f);
 +#endif /* __linux__*/
+ 
+-    if (!(f = fopen(buf, "r")))
+-        return (pid_t)0;
++#ifdef __OpenBSD__
++	int n;
++	kvm_t *kd;
++	struct kinfo_proc *kp;
++
++	kd = kvm_openfiles(NULL, NULL, NULL, KVM_NO_FILES, NULL);
++	if (!kd)
++		return 0;
  
 -    if (fscanf(f, "%*u %*s %*c %u", (unsigned *)&v) != 1)
 -        v = (pid_t)0;
@@ -6157,23 +6145,14 @@ index 9086e16..0ea57e5 100644
 -    struct kinfo_proc *proc = kinfo_getproc(p);
 -    if (!proc)
 -        return (pid_t)0;
-+#ifdef __OpenBSD__
-+	int n;
-+	kvm_t *kd;
-+	struct kinfo_proc *kp;
++	kp = kvm_getprocs(kd, KERN_PROC_PID, p, sizeof(*kp), &n);
++	v = kp->p_ppid;
++#endif /* __OpenBSD__ */
  
 -    v = proc->ki_ppid;
 -    free(proc);
 -#endif
 -    return (pid_t)v;
-+	kd = kvm_openfiles(NULL, NULL, NULL, KVM_NO_FILES, NULL);
-+	if (!kd)
-+		return 0;
-+
-+	kp = kvm_getprocs(kd, KERN_PROC_PID, p, sizeof(*kp), &n);
-+	v = kp->p_ppid;
-+#endif /* __OpenBSD__ */
-+
 +	return (pid_t)v;
  }
  
@@ -6293,7 +6272,7 @@ index 9086e16..0ea57e5 100644
  }
  
  /* There's no way to check accesses to destroyed windows, thus those cases are
-@@ -2691,25 +3185,25 @@ wintomon(Window w)
+@@ -2691,25 +3163,25 @@ wintomon(Window w)
  int
  xerror(Display *dpy, XErrorEvent *ee)
  {
@@ -6333,7 +6312,7 @@ index 9086e16..0ea57e5 100644
  }
  
  /* Startup Error handler to check if another window manager
-@@ -2717,107 +3211,103 @@ xerrordummy(Display *dpy, XErrorEvent *ee)
+@@ -2717,107 +3189,103 @@ xerrordummy(Display *dpy, XErrorEvent *ee)
  int
  xerrorstart(Display *dpy, XErrorEvent *ee)
  {
