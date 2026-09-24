@@ -470,7 +470,7 @@ static const Button buttons[] = {
     { ClkStatusText,        ShiftMask,      Button1,        sigstatusbar,   {.i = 6} },
 #endif
     /* bind statustext-shift-button3: spawn nvim dwmblocks config */
-    { ClkStatusText,        ShiftMask,      Button3,        spawn,          SHCMD(TERMINAL " -e nvim ~/.config/dwmblocks/config.h") },
+    { ClkStatusText,        ShiftMask,      Button3,        spawn,          SHCMD(TERMINAL " -e nvim ~/.config/dwmblocks/blocks.h") },
     /* bind clientwin-mod-button1: movemouse */
     { ClkClientWin,         MODKEY,         Button1,        movemouse,      {0} },
     /* bind clientwin-mod-button2: defaultgaps */
