@@ -97,7 +97,6 @@ static int resizehints = 0;    /* 1 means respect size hints in tiled resizals *
 static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
 static const int refreshrate = 120;  /* refresh rate (per second) for client move/resize */
 
-#define FORCE_VSPLIT 1  /* nrowgrid layout: force two clients to always split vertically */
 #include "vanitygaps.c"
 static const Layout layouts[] = {
     /* symbol       arrange function */
