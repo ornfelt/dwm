@@ -1564,7 +1564,7 @@ pushstack(const Arg *arg) {
 	int i = stackpos(arg);
 	Client *sel = selmon->sel, *c, *p;
 
-	if(i < 0)
+	if(i < 0 || !sel)
 		return;
 	else if(i == 0) {
 		detach(sel);
