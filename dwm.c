@@ -3228,7 +3228,9 @@ resource_load(XrmDatabase db, char *name, enum resource_type rtype, void *dst)
 	{
 		switch (rtype) {
 		case STRING:
-			strcpy(sdst, ret.addr);
+			/* all STRING resources are "#RRGGBB" char[8] buffers */
+			if (strlen(ret.addr) < 8)
+				strcpy(sdst, ret.addr);
 			break;
 		case INTEGER:
 			*idst = strtoul(ret.addr, NULL, 10);
@@ -3243,20 +3245,18 @@ resource_load(XrmDatabase db, char *name, enum resource_type rtype, void *dst)
 void
 load_xresources(void)
 {
-	Display *display;
 	char *resm;
 	XrmDatabase db;
 	ResourcePref *p;
 
-	display = XOpenDisplay(NULL);
-	resm = XResourceManagerString(display);
+	resm = XResourceManagerString(dpy);
 	if (!resm)
 		return;
 
 	db = XrmGetStringDatabase(resm);
 	for (p = resources; p < resources + LENGTH(resources); p++)
 		resource_load(db, p->name, p->type, p->dst);
-	XCloseDisplay(display);
+	XrmDestroyDatabase(db);
 }
 
 int
