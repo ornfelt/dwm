@@ -2975,14 +2975,14 @@ void
 view(const Arg *arg)
 {
     if (mons && mons->next) {
+        // GENIUS 101010101: odd tags on first mon, even tags on second
+        // Focus the target mon first so the check below uses its tagset.
+        // Arg {0} (previous tagset) stays on the current mon.
+        if (arg->ui & TAGMASK)
+            focusnthmon(&((Arg) { .i = (arg->ui & SCREEN_MASK) ? 0 : 1 }));
+
         if ((arg->ui & TAGMASK) == selmon->tagset[selmon->seltags])
             return;
-
-        // GENIUS 101010101
-        if ((arg->ui & SCREEN_MASK) == 0)
-            focusnthmon(&((Arg) { .i = 1 }));
-        else
-            focusnthmon(&((Arg) { .i = 0 }));
     } else {
         if ((arg->ui & TAGMASK) == selmon->tagset[selmon->seltags]) { 
             view(&((Arg) { .ui = 0 })); 
