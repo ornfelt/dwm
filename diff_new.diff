@@ -605,10 +605,18 @@ index bdbf950..fbfec02 100644
  /* Cursor abstraction */
  Cur *drw_cur_create(Drw *drw, int shape);
 diff --git a/dwm.c b/dwm.c
-index 1ce4a38..6146951 100644
+index 1ce4a38..58359d4 100644
 --- a/dwm.c
 +++ b/dwm.c
-@@ -62,8 +62,8 @@
+@@ -27,6 +27,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <strings.h>
+ #include <unistd.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+@@ -62,8 +63,8 @@
  #define ISINC(X)                ((X) > 1000 && (X) < 3000)
  #define ISVISIBLE(C)            ((C->tags & C->mon->tagset[C->mon->seltags]) || C->issticky)
  #define PREVSEL                 3000
@@ -618,7 +626,7 @@ index 1ce4a38..6146951 100644
  #define WIDTH(X)                ((X)->w + 2 * (X)->bw)
  #define HEIGHT(X)               ((X)->h + 2 * (X)->bw)
  #define NUMTAGS					(LENGTH(tags) + LENGTH(scratchpads))
-@@ -72,6 +72,7 @@
+@@ -72,6 +73,7 @@
  #define SPTAGMASK   			(((1 << LENGTH(scratchpads))-1) << LENGTH(tags))
  #define TEXTW(X)                (drw_fontset_getwidth(drw, (X)) + lrpad)
  #define TRUNC(X,A,B)            (MAX((A), MIN((X), (B))))
@@ -626,16 +634,18 @@ index 1ce4a38..6146951 100644
  
  /* enums */
  enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
-@@ -111,7 +112,7 @@ struct Client {
+@@ -110,8 +112,8 @@ struct Client {
+ 	int basew, baseh, incw, inch, maxw, maxh, minw, minh, hintsvalid;
  	int bw, oldbw;
  	unsigned int tags;
-     int isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen, issticky, isterminal, noswallow;
+-    int isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen, issticky, isterminal, noswallow;
 -	pid_t pid;
++    int isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen, issticky, isterminal, noswallow, isbrowser;
 +    pid_t pid;
  	Client *next;
  	Client *snext;
      Client *swallowing;
-@@ -200,6 +201,7 @@ static void destroynotify(XEvent *e);
+@@ -200,13 +202,16 @@ static void destroynotify(XEvent *e);
  static void detach(Client *c);
  static void detachstack(Client *c);
  static Monitor *dirtomon(int dir);
@@ -643,7 +653,8 @@ index 1ce4a38..6146951 100644
  static void drawbar(Monitor *m);
  static void drawbars(void);
  static int drawstatusbar(Monitor *m, int bh, char* text);
-@@ -207,6 +209,7 @@ static void expose(XEvent *e);
++static const char *weathercolor(const char *s);
+ static void expose(XEvent *e);
  static void focus(Client *c);
  static void focusin(XEvent *e);
  static void focusmon(const Arg *arg);
@@ -651,7 +662,7 @@ index 1ce4a38..6146951 100644
  static void focusstack(const Arg *arg);
  static Atom getatomprop(Client *c, Atom prop);
  static int getrootptr(int *x, int *y);
-@@ -248,6 +251,14 @@ static void setcfact(const Arg *arg);
+@@ -248,6 +253,14 @@ static void setcfact(const Arg *arg);
  static void setmfact(const Arg *arg);
  static void setup(void);
  static void seturgent(Client *c, int urg);
@@ -666,7 +677,7 @@ index 1ce4a38..6146951 100644
  static void showhide(Client *c);
  static void sigstatusbar(const Arg *arg);
  static void spawn(const Arg *arg);
-@@ -256,7 +267,12 @@ static void tag(const Arg *arg);
+@@ -256,7 +269,12 @@ static void tag(const Arg *arg);
  static void tagview(const Arg *arg);
  static void tagmon(const Arg *arg);
  static void tagmonview(const Arg *arg);
@@ -679,7 +690,36 @@ index 1ce4a38..6146951 100644
  static void togglefloating(const Arg *arg);
  static void togglescratch(const Arg *arg);
  static void togglesticky(const Arg *arg);
-@@ -493,7 +509,7 @@ swallow(Client *p, Client *c)
+@@ -270,6 +288,7 @@ static void updatebarpos(Monitor *m);
+ static void updatebars(void);
+ static void updateclientlist(void);
+ static int updategeom(void);
++static void updatenetwmstate(Client *c);
+ static void updatenumlockmask(void);
+ static void updatesizehints(Client *c);
+ static void updatestatus(void);
+@@ -293,11 +312,7 @@ static Client *termforwin(const Client *c);
+ static pid_t winpid(Window w);
+ 
+ /* variables */
+-static const char autostartblocksh[] = "autostart_blocking.sh";
+-static const char autostartsh[] = "autostart.sh";
+ static const char broken[] = "broken";
+-static const char dwmdir[] = "dwm";
+-static const char localshare[] = ".local/share";
+ static char stext[1024];
+ static int statussig;
+ static int statusw;
+@@ -355,6 +370,8 @@ applyrules(Client *c)
+ 	XGetClassHint(dpy, c->win, &ch);
+ 	class    = ch.res_class ? ch.res_class : broken;
+ 	instance = ch.res_name  ? ch.res_name  : broken;
++	/* firefox, Firefox, firefox-esr, ... (used by getgaps) */
++	c->isbrowser = !strncasecmp(class, "firefox", 7);
+ 
+ 	for (i = 0; i < LENGTH(rules); i++) {
+ 		r = &rules[i];
+@@ -493,7 +510,7 @@ swallow(Client *p, Client *c)
  
  	if (c->noswallow || c->isterminal)
  		return;
@@ -688,7 +728,25 @@ index 1ce4a38..6146951 100644
  		return;
  
  	detach(c);
-@@ -545,9 +561,8 @@ buttonpress(XEvent *e)
+@@ -508,6 +525,9 @@ swallow(Client *p, Client *c)
+ 	Window w = p->win;
+ 	p->win = c->win;
+ 	c->win = w;
++	int b = p->isbrowser;
++	p->isbrowser = c->isbrowser;
++	c->isbrowser = b;
+ 	updatetitle(p);
+ 	XMoveResizeWindow(dpy, p->win, p->x, p->y, p->w, p->h);
+ 	arrange(p->mon);
+@@ -519,6 +539,7 @@ void
+ unswallow(Client *c)
+ {
+ 	c->win = c->swallowing->win;
++	c->isbrowser = c->swallowing->isbrowser;
+ 
+ 	free(c->swallowing);
+ 	c->swallowing = NULL;
+@@ -545,9 +566,8 @@ buttonpress(XEvent *e)
  
  	click = ClkRootWin;
  	/* focus monitor if necessary */
@@ -700,7 +758,7 @@ index 1ce4a38..6146951 100644
  		unfocus(selmon->sel, 1);
  		selmon = m;
  		focus(NULL);
-@@ -566,12 +581,12 @@ buttonpress(XEvent *e)
+@@ -566,12 +586,12 @@ buttonpress(XEvent *e)
  		if (i < LENGTH(tags)) {
  			click = ClkTagBar;
  			arg.ui = 1 << i;
@@ -716,7 +774,7 @@ index 1ce4a38..6146951 100644
  			char *text, *s, ch;
  			statussig = 0;
  			for (text = s = stext; *s && x <= ev->x; s++) {
-@@ -590,16 +605,17 @@ buttonpress(XEvent *e)
+@@ -590,16 +610,17 @@ buttonpress(XEvent *e)
  					*s = '^';
  					if (*(++s) == 'f')
  						x += atoi(++s);
@@ -740,7 +798,7 @@ index 1ce4a38..6146951 100644
  		XAllowEvents(dpy, ReplayPointer, CurrentTime);
  		click = ClkClientWin;
  	}
-@@ -638,8 +654,9 @@ cleanup(void)
+@@ -638,8 +659,9 @@ cleanup(void)
  		cleanupmon(mons);
  	for (i = 0; i < CurLast; i++)
  		drw_cur_free(drw, cursor[i]);
@@ -752,7 +810,7 @@ index 1ce4a38..6146951 100644
  	free(scheme);
  	XDestroyWindow(dpy, wmcheckwin);
  	drw_free(drw);
-@@ -792,7 +809,10 @@ createmon(void)
+@@ -792,7 +814,10 @@ createmon(void)
  	Monitor *m;
  
  	m = ecalloc(1, sizeof(Monitor));
@@ -764,7 +822,7 @@ index 1ce4a38..6146951 100644
  	m->mfact = mfact;
  	m->nmaster = nmaster;
  	m->showbar = showbar;
-@@ -858,118 +878,16 @@ dirtomon(int dir)
+@@ -858,118 +883,33 @@ dirtomon(int dir)
  	return m;
  }
  
@@ -890,10 +948,39 @@ index 1ce4a38..6146951 100644
 +        i++;
 +    return m;
 +}
++
++/* Colour for the ^2^ weather block, from the temperature that follows the
++ * code in the status text (e.g. "+7°"): +20 and above is hot, below zero
++ * is cold */
++const char *
++weathercolor(const char *s)
++{
++    for (; *s && *s != '^' && (unsigned char)*s >= ' '; s++) {
++        if (*s == '+')
++            return atoi(s + 1) >= 20 ? col21 : col22;
++        if (*s == '-')
++            return col23;
++        if (*s >= '0' && *s <= '9')
++            break;
++    }
++    return col24;
++}
  
  int
  drawstatusbar(Monitor *m, int bh, char* stext)
-@@ -998,8 +916,10 @@ drawstatusbar(Monitor *m, int bh, char* stext)
+@@ -977,10 +917,7 @@ drawstatusbar(Monitor *m, int bh, char* stext)
+     int ret, i, w, x, len;
+     short isCode = 0;
+     char *text;
+-    char *p;
+-    FILE *ptr;
+-    char ch;
+-    int hotbool = 0;
++    char *p, *s;
+ 
+     len = strlen(stext) + 1 ;
+     if (!(text = (char*) malloc(sizeof(char)*len)))
+@@ -998,8 +935,10 @@ drawstatusbar(Monitor *m, int bh, char* stext)
                  text[i] = '\0';
                  w += TEXTW(text) - lrpad;
                  text[i] = '^';
@@ -906,24 +993,48 @@ index 1ce4a38..6146951 100644
              } else {
                  isCode = 0;
                  text = text + i + 1;
-@@ -1035,11 +955,14 @@ drawstatusbar(Monitor *m, int bh, char* stext)
+@@ -1035,36 +974,11 @@ drawstatusbar(Monitor *m, int bh, char* stext)
              drw_text(drw, x, 0, w, bh, 0, text, 0);
              x += w;
  
 -            while (text[++i] != '^') {
 +            while (text[++i] && text[i] != '^') {
                  if (text[i] == '2') {
-                     // Check if weather is hot or not
-                     ptr = fopen("/home/jonas/.local/share/weatherreport", "r");
+-                    // Check if weather is hot or not
+-                    ptr = fopen("/home/jonas/.local/share/weatherreport", "r");
 -                    if (ptr == NULL) printf("Fail to read wr...");
-+                    if (ptr == NULL) {
-+                        drw_clr_create(drw, &drw->scheme[ColFg], col24);
-+                        continue;
-+                    }
-                     do{
-                         ch = fgetc(ptr);
-                         // Check if temp is above +20 (= hot)
-@@ -1075,6 +998,8 @@ drawstatusbar(Monitor *m, int bh, char* stext)
+-                    do{
+-                        ch = fgetc(ptr);
+-                        // Check if temp is above +20 (= hot)
+-                        if (hotbool){
+-                            if ((ch == '2' || ch == '3') && fgetc(ptr) <= '9'){
+-                                drw_clr_create(drw, &drw->scheme[ColFg], col21);
+-                                break;
+-                            }else{
+-                                drw_clr_create(drw, &drw->scheme[ColFg], col22);
+-                                break;
+-                            }
+-                        }
+-
+-                        if (ch == '+'){
+-                            hotbool = 1;
+-                        }else if (ch == '-') {
+-                            drw_clr_create(drw, &drw->scheme[ColFg], col23);
+-                            break;
+-                        }
+-                        else{
+-                            drw_clr_create(drw, &drw->scheme[ColFg], col24);
+-                            break;
+-                        }
+-                    } while (ch != EOF);
+-                    fclose(ptr);
++                    /* weather: colour by the temperature that follows */
++                    s = strchr(text + i, '^');
++                    drw_clr_create(drw, &drw->scheme[ColFg], weathercolor(s ? s + 1 : ""));
+                 } else if (text[i] == '3') {
+                     drw_clr_create(drw, &drw->scheme[ColFg], col3);
+                 } else if (text[i] == '4') {
+@@ -1075,6 +989,8 @@ drawstatusbar(Monitor *m, int bh, char* stext)
                      drw_clr_create(drw, &drw->scheme[ColFg], col6);
                  }
              }
@@ -932,7 +1043,7 @@ index 1ce4a38..6146951 100644
  
              text = text + i + 1;
              i=-1;
-@@ -1093,130 +1018,6 @@ drawstatusbar(Monitor *m, int bh, char* stext)
+@@ -1093,136 +1009,10 @@ drawstatusbar(Monitor *m, int bh, char* stext)
      return ret;
  }
  
@@ -1063,7 +1174,26 @@ index 1ce4a38..6146951 100644
  void
  drawbar(Monitor *m)
  {
-@@ -1329,6 +1130,22 @@ focusmon(const Arg *arg)
+ 	int x, w, tw = 0;
+-	int boxs = drw->fonts->h / 9;
+-	int boxw = drw->fonts->h / 6 + 2;
+ 	unsigned int i, occ = 0, urg = 0;
+ 	Client *c;
+ 
+@@ -1230,10 +1020,8 @@ drawbar(Monitor *m)
+ 		return;
+ 
+ 	/* draw status first so it can be overdrawn by tags later */
+-	//if (m == selmon) { /* status is only drawn on selected monitor */
+-    if (m == selmon || 1) { 
+-		tw = statusw = m->ww - drawstatusbar(m, bh, stext);
+-	}
++	/* status is drawn on every monitor, not just selmon */
++	tw = statusw = m->ww - drawstatusbar(m, bh, stext);
+ 
+ 	for (c = m->clients; c; c = c->next) {
+ 		occ |= c->tags == TAGMASK ? 0 : c->tags;
+@@ -1329,6 +1117,22 @@ focusmon(const Arg *arg)
  	focus(NULL);
  }
  
@@ -1086,7 +1216,7 @@ index 1ce4a38..6146951 100644
  void
  focusstack(const Arg *arg)
  {
-@@ -1347,14 +1164,15 @@ focusstack(const Arg *arg)
+@@ -1347,14 +1151,15 @@ focusstack(const Arg *arg)
  Atom
  getatomprop(Client *c, Atom prop)
  {
@@ -1106,7 +1236,7 @@ index 1ce4a38..6146951 100644
  		XFree(p);
  	}
  	return atom;
-@@ -1404,10 +1222,10 @@ getstate(Window w)
+@@ -1404,10 +1209,10 @@ getstate(Window w)
  	Atom real;
  
  	if (XGetWindowProperty(dpy, w, wmatom[WMState], 0L, 2L, False, wmatom[WMState],
@@ -1120,7 +1250,7 @@ index 1ce4a38..6146951 100644
  	XFree(p);
  	return result;
  }
-@@ -1671,7 +1489,7 @@ movemouse(const Arg *arg)
+@@ -1671,7 +1476,7 @@ movemouse(const Arg *arg)
  			handler[ev.type](&ev);
  			break;
  		case MotionNotify:
@@ -1129,7 +1259,7 @@ index 1ce4a38..6146951 100644
  				continue;
  			lasttime = ev.xmotion.time;
  
-@@ -1756,7 +1574,7 @@ pushstack(const Arg *arg) {
+@@ -1756,7 +1561,7 @@ pushstack(const Arg *arg) {
  	int i = stackpos(arg);
  	Client *sel = selmon->sel, *c, *p;
  
@@ -1138,7 +1268,7 @@ index 1ce4a38..6146951 100644
  		return;
  	else if(i == 0) {
  		detach(sel);
-@@ -1814,8 +1632,8 @@ resizeclient(Client *c, int x, int y, int w, int h)
+@@ -1814,8 +1619,8 @@ resizeclient(Client *c, int x, int y, int w, int h)
  	if (((nexttiled(c->mon->clients) == c && !nexttiled(c->next))
  	    || &monocle == c->mon->lt[c->mon->sellt]->arrange)
  	    && !c->isfullscreen && !c->isfloating) {
@@ -1149,7 +1279,7 @@ index 1ce4a38..6146951 100644
  		wc.border_width = 0;
  	}
  	XConfigureWindow(dpy, c->win, CWX|CWY|CWWidth|CWHeight|CWBorderWidth, &wc);
-@@ -1852,7 +1670,7 @@ resizemouse(const Arg *arg)
+@@ -1852,7 +1657,7 @@ resizemouse(const Arg *arg)
  			handler[ev.type](&ev);
  			break;
  		case MotionNotify:
@@ -1158,7 +1288,91 @@ index 1ce4a38..6146951 100644
  				continue;
  			lasttime = ev.xmotion.time;
  
-@@ -2035,9 +1853,13 @@ sendmon(Client *c, Monitor *m)
+@@ -1916,83 +1721,6 @@ run(void)
+ 			handler[ev.type](&ev); /* call handler */
+ }
+ 
+-//void
+-//runautostart(void)
+-//{
+-//	char *pathpfx;
+-//	char *path;
+-//	char *xdgdatahome;
+-//	char *home;
+-//	struct stat sb;
+-//
+-//	if ((home = getenv("HOME")) == NULL)
+-//		/* this is almost impossible */
+-//		return;
+-//
+-//	/* if $XDG_DATA_HOME is set and not empty, use $XDG_DATA_HOME/dwm,
+-//	 * otherwise use ~/.local/share/dwm as autostart script directory
+-//	 */
+-//	xdgdatahome = getenv("XDG_DATA_HOME");
+-//	if (xdgdatahome != NULL && *xdgdatahome != '\0') {
+-//		/* space for path segments, separators and nul */
+-//		pathpfx = ecalloc(1, strlen(xdgdatahome) + strlen(dwmdir) + 2);
+-//
+-//		if (sprintf(pathpfx, "%s/%s", xdgdatahome, dwmdir) <= 0) {
+-//			free(pathpfx);
+-//			return;
+-//		}
+-//	} else {
+-//		/* space for path segments, separators and nul */
+-//		pathpfx = ecalloc(1, strlen(home) + strlen(localshare)
+-//		                     + strlen(dwmdir) + 3);
+-//
+-//		if (sprintf(pathpfx, "%s/%s/%s", home, localshare, dwmdir) < 0) {
+-//			free(pathpfx);
+-//			return;
+-//		}
+-//	}
+-//
+-//	/* check if the autostart script directory exists */
+-//	if (! (stat(pathpfx, &sb) == 0 && S_ISDIR(sb.st_mode))) {
+-//		/* the XDG conformant path does not exist or is no directory
+-//		 * so we try ~/.dwm instead
+-//		 */
+-//		char *pathpfx_new = realloc(pathpfx, strlen(home) + strlen(dwmdir) + 3);
+-//		if(pathpfx_new == NULL) {
+-//			free(pathpfx);
+-//			return;
+-//		}
+-//		pathpfx = pathpfx_new;
+-//
+-//		if (sprintf(pathpfx, "%s/.%s", home, dwmdir) <= 0) {
+-//			free(pathpfx);
+-//			return;
+-//		}
+-//	}
+-//
+-//	/* try the blocking script first */
+-//	path = ecalloc(1, strlen(pathpfx) + strlen(autostartblocksh) + 2);
+-//	if (sprintf(path, "%s/%s", pathpfx, autostartblocksh) <= 0) {
+-//		free(path);
+-//		free(pathpfx);
+-//	}
+-//
+-//	if (access(path, X_OK) == 0)
+-//		system(path);
+-//
+-//	/* now the non-blocking script */
+-//	if (sprintf(path, "%s/%s", pathpfx, autostartsh) <= 0) {
+-//		free(path);
+-//		free(pathpfx);
+-//	}
+-//
+-//	if (access(path, X_OK) == 0)
+-//		system(strcat(path, " &"));
+-//
+-//	free(pathpfx);
+-//	free(path);
+-//}
+-
+ void
+ runautostart(void)
+ {
+@@ -2035,9 +1763,13 @@ sendmon(Client *c, Monitor *m)
  	detach(c);
  	detachstack(c);
  	c->mon = m;
@@ -1173,7 +1387,7 @@ index 1ce4a38..6146951 100644
  	focus(NULL);
  	arrange(NULL);
  }
-@@ -2052,10 +1874,12 @@ sendmonview(Client *c, Monitor *m)
+@@ -2052,10 +1784,12 @@ sendmonview(Client *c, Monitor *m)
      detachstack(c);
      arrange(c->mon);
      c->mon = m;
@@ -1188,7 +1402,7 @@ index 1ce4a38..6146951 100644
      arrange(m);
      focus(c);
      restack(m);
-@@ -2098,12 +1922,10 @@ sendevent(Client *c, Atom proto)
+@@ -2098,12 +1832,10 @@ sendevent(Client *c, Atom proto)
  void
  setfocus(Client *c)
  {
@@ -1204,44 +1418,65 @@ index 1ce4a38..6146951 100644
  	sendevent(c, wmatom[WMTakeFocus]);
  }
  
-@@ -2166,6 +1988,188 @@ setlayout(const Arg *arg)
+@@ -2111,9 +1843,8 @@ void
+ setfullscreen(Client *c, int fullscreen)
+ {
+ 	if (fullscreen && !c->isfullscreen) {
+-		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
+-			PropModeReplace, (unsigned char*)&netatom[NetWMFullscreen], 1);
+ 		c->isfullscreen = 1;
++		updatenetwmstate(c);
+ 		c->oldstate = c->isfloating;
+ 		c->oldbw = c->bw;
+ 		c->bw = 0;
+@@ -2121,9 +1852,8 @@ setfullscreen(Client *c, int fullscreen)
+ 		resizeclient(c, c->mon->mx, c->mon->my, c->mon->mw, c->mon->mh);
+ 		XRaiseWindow(dpy, c->win);
+ 	} else if (!fullscreen && c->isfullscreen){
+-		XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
+-			PropModeReplace, (unsigned char*)0, 0);
+ 		c->isfullscreen = 0;
++		updatenetwmstate(c);
+ 		c->isfloating = c->oldstate;
+ 		c->bw = c->oldbw;
+ 		c->x = c->oldx;
+@@ -2136,21 +1866,17 @@ setfullscreen(Client *c, int fullscreen)
+ }
+ 
+ void
+-	 setsticky(Client *c, int sticky)
+-	 {
+-
+-		 if(sticky && !c->issticky) {
+-			 XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
+-					 PropModeReplace, (unsigned char *) &netatom[NetWMSticky], 1);
+-			 c->issticky = 1;
+-		 } else if(!sticky && c->issticky){
+-			 XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
+-					 PropModeReplace, (unsigned char *)0, 0);
+-			 c->issticky = 0;
+-			 arrange(c->mon);
+-		 }
+-	 }
+-
++setsticky(Client *c, int sticky)
++{
++	if (sticky && !c->issticky) {
++		c->issticky = 1;
++		updatenetwmstate(c);
++	} else if (!sticky && c->issticky) {
++		c->issticky = 0;
++		updatenetwmstate(c);
++		arrange(c->mon);
++	}
++}
+ 
+ void
+ setlayout(const Arg *arg)
+@@ -2166,6 +1892,154 @@ setlayout(const Arg *arg)
  		drawbar(selmon);
  }
  
-+//void
-+//shiftview(const Arg *arg) {
-+//	Arg shifted;
-+//
-+//	if(arg->i > 0) /* left circular shift */
-+//		shifted.ui = (selmon->tagset[selmon->seltags] << arg->i)
-+//		   | (selmon->tagset[selmon->seltags] >> (LENGTH(tags) - arg->i));
-+//
-+//	else /* right circular shift */
-+//		shifted.ui = selmon->tagset[selmon->seltags] >> (- arg->i)
-+//		   | selmon->tagset[selmon->seltags] << (LENGTH(tags) + arg->i);
-+//
-+//	view(&shifted);
-+//}
-+//
-+//void
-+//shifttag(const Arg *arg) {
-+//	Arg shifted;
-+//	Client *c;
-+//
-+//	if (!selmon->sel)
-+//		return;
-+//	c = selmon->sel;
-+//
-+//	if (arg->i > 0) /* left circular shift */
-+//		shifted.ui = (c->tags ^ (c->tags << arg->i)) 
-+//			^ (c->tags >> (LENGTH(tags) - arg->i));
-+//	else /* right circular shift */
-+//		shifted.ui = (c->tags ^ (c->tags >> (-arg->i)))
-+//			^ (c->tags << (LENGTH(tags) + arg->i));
-+//
-+//	toggletag(&shifted);
-+//}
-+
 +// https://github.com/ornfelt/dwm/blob/bkp/shiftview.c
 +// Or this (used below):
 +// https://dwm.suckless.org/patches/shift-tools/shift-tools-scratchpads.c
@@ -1393,38 +1628,7 @@ index 1ce4a38..6146951 100644
  void
  setcfact(const Arg *arg) {
  	float f;
-@@ -2379,20 +2383,76 @@ stackpos(const Arg *arg) {
- 		return arg->i;
- }
- 
-+//void
-+//tag(const Arg *arg)
-+//{
-+//    if (selmon->sel && arg->ui & TAGMASK) {
-+//        if (mons && mons->next) {
-+//            // Moving to even tag, selected mon != first mon
-+//            if ((arg->ui & SCREEN_MASK) == 0 && selmon != mons) {
-+//                selmon->sel->tags = arg->ui & TAGMASK;
-+//                focus(NULL);
-+//                arrange(selmon);
-+//                // Moving to odd tag, selected mon == first mon
-+//            } else if ((arg->ui & SCREEN_MASK) > 0 && selmon == mons) {
-+//                selmon->sel->tags = arg->ui & TAGMASK;
-+//                focus(NULL);
-+//                arrange(selmon);
-+//            } else {
-+//                tagnextmon(arg);
-+//            }
-+//        } else {
-+//            if (selmon->sel && arg->ui & TAGMASK) {
-+//                selmon->sel->tags = arg->ui & TAGMASK;
-+//                focus(NULL);
-+//                arrange(selmon);
-+//            }
-+//        }
-+//    }
-+//}
-+
+@@ -2382,17 +2256,45 @@ stackpos(const Arg *arg) {
  void
  tag(const Arg *arg)
  {
@@ -1475,7 +1679,7 @@ index 1ce4a38..6146951 100644
          selmon->sel->tags = arg->ui & TAGMASK;
          focus(NULL);
          arrange(selmon);
-@@ -2416,6 +2476,51 @@ tagmonview(const Arg *arg)
+@@ -2416,6 +2318,51 @@ tagmonview(const Arg *arg)
      sendmonview(selmon->sel, dirtomon(arg->i));
  }
  
@@ -1527,7 +1731,7 @@ index 1ce4a38..6146951 100644
  void
  togglebar(const Arg *arg)
  {
-@@ -2425,6 +2530,18 @@ togglebar(const Arg *arg)
+@@ -2425,6 +2372,18 @@ togglebar(const Arg *arg)
  	arrange(selmon);
  }
  
@@ -1546,7 +1750,7 @@ index 1ce4a38..6146951 100644
  void
  togglefloating(const Arg *arg)
  {
-@@ -2433,6 +2550,7 @@ togglefloating(const Arg *arg)
+@@ -2433,6 +2392,7 @@ togglefloating(const Arg *arg)
  	if (selmon->sel->isfullscreen) /* no support for fullscreen windows */
  		return;
  	selmon->sel->isfloating = !selmon->sel->isfloating || selmon->sel->isfixed;
@@ -1554,15 +1758,10 @@ index 1ce4a38..6146951 100644
  	if (selmon->sel->isfloating)
  		/* restore last known float dimensions */
  		resize(selmon->sel, selmon->sel->sfx, selmon->sel->sfy,
-@@ -2444,6 +2562,17 @@ togglefloating(const Arg *arg)
+@@ -2444,6 +2404,12 @@ togglefloating(const Arg *arg)
  		selmon->sel->sfw = selmon->sel->w;
  		selmon->sel->sfh = selmon->sel->h;
  	}
-+
-+ 	//if (selmon->sel->isfloating)
-+ 	//	resize(selmon->sel, selmon->sel->x, selmon->sel->y,
-+ 	//		//selmon->sel->w, selmon->sel->h, 0);
-+ 	//		900, 600, 0);
 +
 +    if (!selmon->sel->sfx) {
 +        selmon->sel->x = selmon->sel->mon->mx + (selmon->sel->mon->mw - WIDTH(selmon->sel)) / 2;
@@ -1572,7 +1771,7 @@ index 1ce4a38..6146951 100644
  	arrange(selmon);
  }
  
-@@ -2642,11 +2771,11 @@ updategeom(void)
+@@ -2642,11 +2608,11 @@ updategeom(void)
  
  #ifdef XINERAMA
  	if (XineramaIsActive(dpy)) {
@@ -1589,7 +1788,7 @@ index 1ce4a38..6146951 100644
  
  		for (n = 0, m = mons; m; m = m->next, n++);
  		/* only consider unique geometries as separate screens */
-@@ -2665,6 +2794,29 @@ updategeom(void)
+@@ -2665,6 +2631,29 @@ updategeom(void)
  			else
  				mons = createmon();
  		}
@@ -1619,7 +1818,30 @@ index 1ce4a38..6146951 100644
  		for (i = 0, m = mons; i < nn && m; m = m->next, i++)
  			if (i >= n
  			|| unique[i].x_org != m->mx || unique[i].y_org != m->my
-@@ -2778,7 +2930,7 @@ updatestatus(void)
+@@ -2713,6 +2702,22 @@ updategeom(void)
+ 	return dirty;
+ }
+ 
++/* Write the _NET_WM_STATE atoms dwm manages, so that setting one state
++ * does not clear the other */
++void
++updatenetwmstate(Client *c)
++{
++	Atom state[2];
++	int n = 0;
++
++	if (c->isfullscreen)
++		state[n++] = netatom[NetWMFullscreen];
++	if (c->issticky)
++		state[n++] = netatom[NetWMSticky];
++	XChangeProperty(dpy, c->win, netatom[NetWMState], XA_ATOM, 32,
++		PropModeReplace, (unsigned char *)state, n);
++}
++
+ void
+ updatenumlockmask(void)
+ {
+@@ -2778,7 +2783,7 @@ updatestatus(void)
  {
  	if (!gettextprop(root, XA_WM_NAME, stext, sizeof(stext)))
  		strcpy(stext, "dwm-"VERSION);
@@ -1628,7 +1850,7 @@ index 1ce4a38..6146951 100644
  }
  
  void
-@@ -2827,16 +2979,27 @@ updatewmhints(Client *c)
+@@ -2827,16 +2832,27 @@ updatewmhints(Client *c)
  void
  view(const Arg *arg)
  {
@@ -1664,7 +1886,7 @@ index 1ce4a38..6146951 100644
  }
  
  pid_t
-@@ -2854,8 +3017,10 @@ winpid(Window w)
+@@ -2854,8 +2870,10 @@ winpid(Window w)
  	xcb_res_query_client_ids_cookie_t c = xcb_res_query_client_ids(xcon, 1, &spec);
  	xcb_res_query_client_ids_reply_t *r = xcb_res_query_client_ids_reply(xcon, c, &e);
  
@@ -1676,7 +1898,7 @@ index 1ce4a38..6146951 100644
  
  	xcb_res_client_id_value_iterator_t i = xcb_res_query_client_ids_ids_iterator(r);
  	for (; i.rem; xcb_res_client_id_value_next(&i)) {
-@@ -2899,13 +3064,15 @@ getparentprocess(pid_t p)
+@@ -2899,13 +2917,15 @@ getparentprocess(pid_t p)
  
  #ifdef __linux__
  	FILE *f;
@@ -1694,7 +1916,7 @@ index 1ce4a38..6146951 100644
  	fclose(f);
  #endif /* __linux__*/
  
-@@ -3070,7 +3237,9 @@ resource_load(XrmDatabase db, char *name, enum resource_type rtype, void *dst)
+@@ -3070,7 +3090,9 @@ resource_load(XrmDatabase db, char *name, enum resource_type rtype, void *dst)
  	{
  		switch (rtype) {
  		case STRING:
@@ -1705,7 +1927,7 @@ index 1ce4a38..6146951 100644
  			break;
  		case INTEGER:
  			*idst = strtoul(ret.addr, NULL, 10);
-@@ -3085,20 +3254,18 @@ resource_load(XrmDatabase db, char *name, enum resource_type rtype, void *dst)
+@@ -3085,20 +3107,18 @@ resource_load(XrmDatabase db, char *name, enum resource_type rtype, void *dst)
  void
  load_xresources(void)
  {
@@ -1816,15 +2038,16 @@ index 7905a6d..0000000
 -    }
 -}
 diff --git a/vanitygaps.c b/vanitygaps.c
-index 6f2407d..efbbe03 100644
+index 6f2407d..c6bda15 100644
 --- a/vanitygaps.c
 +++ b/vanitygaps.c
 @@ -162,11 +162,9 @@ getgaps(Monitor *m, int *oh, int *ov, int *ih, int *iv, unsigned int *nc)
  	if (smartgaps && n == 1) {
  		oe = 0; // outer gaps disabled when only one client
  	}
+-    if (n == 1 && strstr(nexttiled(m->clients)->name, "Mozilla Firefox") != NULL && !browsergaps) {
 +
-     if (n == 1 && strstr(nexttiled(m->clients)->name, "Mozilla Firefox") != NULL && !browsergaps) {
++    if (n == 1 && nexttiled(m->clients)->isbrowser && !browsergaps) {
          oe = 0; // outer gaps disabled when only one client (and it's Firefox)
 -        if (TAGMASK == (1 << 8)){
 -            setgaps(gappoh, gappov, gappih, gappiv);
