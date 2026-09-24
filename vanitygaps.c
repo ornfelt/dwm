@@ -163,7 +163,7 @@ getgaps(Monitor *m, int *oh, int *ov, int *ih, int *iv, unsigned int *nc)
 		oe = 0; // outer gaps disabled when only one client
 	}
 
-    if (n == 1 && strstr(nexttiled(m->clients)->name, "Mozilla Firefox") != NULL && !browsergaps) {
+    if (n == 1 && nexttiled(m->clients)->isbrowser && !browsergaps) {
         oe = 0; // outer gaps disabled when only one client (and it's Firefox)
     }
 

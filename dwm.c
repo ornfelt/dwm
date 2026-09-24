@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -111,7 +112,7 @@ struct Client {
 	int basew, baseh, incw, inch, maxw, maxh, minw, minh, hintsvalid;
 	int bw, oldbw;
 	unsigned int tags;
-    int isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen, issticky, isterminal, noswallow;
+    int isfixed, isfloating, isurgent, neverfocus, oldstate, isfullscreen, issticky, isterminal, noswallow, isbrowser;
     pid_t pid;
 	Client *next;
 	Client *snext;
@@ -372,6 +373,8 @@ applyrules(Client *c)
 	XGetClassHint(dpy, c->win, &ch);
 	class    = ch.res_class ? ch.res_class : broken;
 	instance = ch.res_name  ? ch.res_name  : broken;
+	/* firefox, Firefox, firefox-esr, ... (used by getgaps) */
+	c->isbrowser = !strncasecmp(class, "firefox", 7);
 
 	for (i = 0; i < LENGTH(rules); i++) {
 		r = &rules[i];
@@ -525,6 +528,9 @@ swallow(Client *p, Client *c)
 	Window w = p->win;
 	p->win = c->win;
 	c->win = w;
+	int b = p->isbrowser;
+	p->isbrowser = c->isbrowser;
+	c->isbrowser = b;
 	updatetitle(p);
 	XMoveResizeWindow(dpy, p->win, p->x, p->y, p->w, p->h);
 	arrange(p->mon);
@@ -536,6 +542,7 @@ void
 unswallow(Client *c)
 {
 	c->win = c->swallowing->win;
+	c->isbrowser = c->swallowing->isbrowser;
 
 	free(c->swallowing);
 	c->swallowing = NULL;
