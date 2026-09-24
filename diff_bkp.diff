@@ -618,7 +618,7 @@ index 1fc4bf1..49b3c6c 100644
  # flags
  CPPFLAGS = -D_DEFAULT_SOURCE -D_BSD_SOURCE -D_XOPEN_SOURCE=700L -DVERSION=\"${VERSION}\" ${XINERAMAFLAGS}
 diff --git a/drw.c b/drw.c
-index d43d8c2..fc0f6f9 100644
+index d43d8c2..6e59833 100644
 --- a/drw.c
 +++ b/drw.c
 @@ -13,7 +13,6 @@
@@ -875,7 +875,8 @@ index d43d8c2..fc0f6f9 100644
 +	                       clrname, dest))
 +		die("error, cannot allocate color '%s'", clrname);
  
-     dest->pixel |= 0xff << 24;
+-    dest->pixel |= 0xff << 24;
++    dest->pixel |= 0xffU << 24;
  }
  
 -/* Wrapper to create color schemes. The caller has to call free(3) on the
@@ -1620,7 +1621,7 @@ index 7feba78..d04bec6 100644
  .BR dmenu (1),
  .BR st (1)
 diff --git a/dwm.c b/dwm.c
-index 9086e16..c773566 100644
+index 9086e16..2aab93f 100644
 --- a/dwm.c
 +++ b/dwm.c
 @@ -29,6 +29,7 @@
@@ -1984,7 +1985,7 @@ index 9086e16..c773566 100644
  static int running = 1;
  static Cur *cursor[CurLast];
  static Clr **scheme;
-@@ -340,528 +359,532 @@ struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
+@@ -340,528 +359,533 @@ struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
  void
  applyrules(Client *c)
  {
@@ -2256,10 +2257,10 @@ index 9086e16..c773566 100644
 -        return;
 -    if (!swallowfloating && c->isfloating)
 -        return;
--
+ 
 -    detach(c);
 -    detachstack(c);
- 
+-
 -    setclientstate(c, WithdrawnState);
 -    XUnmapWindow(dpy, p->win);
 +	if (c->noswallow || c->isterminal)
@@ -2307,14 +2308,14 @@ index 9086e16..c773566 100644
 -
 -    free(c->swallowing);
 -    c->swallowing = NULL;
-+	c->win = c->swallowing->win;
- 
+-
 -    /* unfullscreen the client */
 -    setfullscreen(c, 0);
 -    updatetitle(c);
 -    arrange(c->mon);
 -    XMapWindow(dpy, c->win);
--
++	c->win = c->swallowing->win;
+ 
 -    XWindowChanges wc;
 -    wc.border_width = c->bw;
 -    XConfigureWindow(dpy, c->win, CWBorderWidth, &wc);
@@ -2532,6 +2533,7 @@ index 9086e16..c773566 100644
 +		drw_cur_free(drw, cursor[i]);
 +	for (i = 0; i < LENGTH(colors); i++)
 +		drw_scm_free(drw, scheme[i], 3);
++	drw_scm_free(drw, scheme[LENGTH(colors)], 3);
 +	free(scheme);
 +	XDestroyWindow(dpy, wmcheckwin);
 +	drw_free(drw);
@@ -2921,7 +2923,7 @@ index 9086e16..c773566 100644
      return m;
  }
  
-@@ -892,8 +915,10 @@ drawstatusbar(Monitor *m, int bh, char* stext)
+@@ -892,8 +916,10 @@ drawstatusbar(Monitor *m, int bh, char* stext)
                  text[i] = '\0';
                  w += TEXTW(text) - lrpad;
                  text[i] = '^';
@@ -2934,7 +2936,7 @@ index 9086e16..c773566 100644
              } else {
                  isCode = 0;
                  text = text + i + 1;
-@@ -929,14 +954,17 @@ drawstatusbar(Monitor *m, int bh, char* stext)
+@@ -929,14 +955,17 @@ drawstatusbar(Monitor *m, int bh, char* stext)
              drw_text(drw, x, 0, w, bh, 0, text, 0);
              x += w;
  
@@ -2955,7 +2957,7 @@ index 9086e16..c773566 100644
                          if (hotbool){
                              if ((ch == '2' || ch == '3') && fgetc(ptr) <= '9'){
                                  drw_clr_create(drw, &drw->scheme[ColFg], col21);
-@@ -969,6 +997,8 @@ drawstatusbar(Monitor *m, int bh, char* stext)
+@@ -969,6 +998,8 @@ drawstatusbar(Monitor *m, int bh, char* stext)
                      drw_clr_create(drw, &drw->scheme[ColFg], col6);
                  }
              }
@@ -2964,7 +2966,7 @@ index 9086e16..c773566 100644
  
              text = text + i + 1;
              i=-1;
-@@ -990,108 +1020,124 @@ drawstatusbar(Monitor *m, int bh, char* stext)
+@@ -990,111 +1021,127 @@ drawstatusbar(Monitor *m, int bh, char* stext)
  void
  drawbar(Monitor *m)
  {
@@ -3155,8 +3157,12 @@ index 9086e16..c773566 100644
 +    if ((m = numtomon(arg->i)) == selmon)
          return;
      unfocus(selmon->sel, 0);
-     XWarpPointer(dpy, None, m->barwin, 0, 0, 0, 0, m->mw / 2, m->mh / 2);
-@@ -1102,622 +1148,670 @@ focusmon(const Arg *arg)
+-    XWarpPointer(dpy, None, m->barwin, 0, 0, 0, 0, m->mw / 2, m->mh / 2);
++    XWarpPointer(dpy, None, root, 0, 0, 0, 0, m->wx + m->ww / 2, m->wy + m->wh / 2);
+     selmon = m;
+     focus(NULL);
+ }
+@@ -1102,622 +1149,670 @@ focusmon(const Arg *arg)
  void
  focusstack(const Arg *arg)
  {
@@ -4305,7 +4311,7 @@ index 9086e16..c773566 100644
  {
      system("killall -q dwmblocks; dwmblocks &");
  }
-@@ -1725,44 +1819,46 @@ runAutostart(void)
+@@ -1725,44 +1820,46 @@ runAutostart(void)
  void
  scan(void)
  {
@@ -4385,7 +4391,16 @@ index 9086e16..c773566 100644
  }
  
  void
-@@ -1787,318 +1883,614 @@ sendmonview(Client *c, Monitor *m)
+@@ -1778,7 +1875,7 @@ sendmonview(Client *c, Monitor *m)
+     c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
+     attach(c);
+     attachstack(c);
+-    XWarpPointer(dpy, None, m->barwin, 0, 0, 0, 0, m->mw / 2, m->mh / 2);
++    XWarpPointer(dpy, None, root, 0, 0, 0, 0, m->wx + m->ww / 2, m->wy + m->wh / 2);
+     arrange(m);
+     focus(c);
+     restack(m);
+@@ -1787,318 +1884,614 @@ sendmonview(Client *c, Monitor *m)
  void
  setclientstate(Client *c, long state)
  {
@@ -4724,11 +4739,11 @@ index 9086e16..c773566 100644
 +	for (c = selmon->clients; c != NULL; c = c->next) {
 +		if ((c->tags & newtag) || (c->tags & curtag))
 +			c->tags ^= curtag ^ newtag;
-+
+ 
 +		if (!c->tags)
 +			c->tags = newtag;
 +	}
- 
++
 +	//move to the swaped tag
 +	//selmon->tagset[selmon->seltags] = newtag;
 +
@@ -5139,14 +5154,14 @@ index 9086e16..c773566 100644
 +        // Moving to even tag, selected mon != first mon
 +        if ((arg->ui & SCREEN_MASK) == 0 && selmon != mons) {
 +            selmon->sel->tags = arg->ui & TAGMASK;
-         }
++        }
 +        // Moving to odd tag, selected mon == first mon
 +        else if ((arg->ui & SCREEN_MASK) > 0 && selmon == mons) {
 +            selmon->sel->tags = arg->ui & TAGMASK;
 +        } else {
 +            tagnextmon(arg);
 +            return;
-+        }
+         }
 +    } else {
 +        selmon->sel->tags = arg->ui & TAGMASK;
      }
@@ -5236,7 +5251,7 @@ index 9086e16..c773566 100644
  {
      if (selmon->sel && arg->ui & TAGMASK) {
          selmon->sel->tags = arg->ui & TAGMASK;
-@@ -2109,439 +2501,493 @@ tagview(const Arg *arg)
+@@ -2109,439 +2502,493 @@ tagview(const Arg *arg)
  }
  
  void
@@ -5978,8 +5993,7 @@ index 9086e16..c773566 100644
  updatewmhints(Client *c)
  {
 -    XWMHints *wmh;
-+	XWMHints *wmh;
- 
+-
 -    if ((wmh = XGetWMHints(dpy, c->win))) {
 -        if (c == selmon->sel && wmh->flags & XUrgencyHint) {
 -            wmh->flags &= ~XUrgencyHint;
@@ -5992,6 +6006,8 @@ index 9086e16..c773566 100644
 -            c->neverfocus = 0;
 -        XFree(wmh);
 -    }
++	XWMHints *wmh;
++
 +	if ((wmh = XGetWMHints(dpy, c->win))) {
 +		if (c == selmon->sel && wmh->flags & XUrgencyHint) {
 +			wmh->flags &= ~XUrgencyHint;
@@ -6013,14 +6029,14 @@ index 9086e16..c773566 100644
 -        view(&((Arg) { .ui = 0 }));
 -        return;
 +    if (mons && mons->next) {
++        // GENIUS 101010101: odd tags on first mon, even tags on second
++        // Focus the target mon first so the check below uses its tagset.
++        // Arg {0} (previous tagset) stays on the current mon.
++        if (arg->ui & TAGMASK)
++            focusnthmon(&((Arg) { .i = (arg->ui & SCREEN_MASK) ? 0 : 1 }));
++
 +        if ((arg->ui & TAGMASK) == selmon->tagset[selmon->seltags])
 +            return;
-+
-+        // GENIUS 101010101
-+        if ((arg->ui & SCREEN_MASK) == 0)
-+            focusnthmon(&((Arg) { .i = 1 }));
-+        else
-+            focusnthmon(&((Arg) { .i = 0 }));
 +    } else {
 +        if ((arg->ui & TAGMASK) == selmon->tagset[selmon->seltags]) { 
 +            view(&((Arg) { .ui = 0 })); 
@@ -6029,7 +6045,7 @@ index 9086e16..c773566 100644
      }
  
      selmon->seltags ^= 1; /* toggle sel tagset */
-@@ -2554,135 +3000,161 @@ view(const Arg *arg)
+@@ -2554,135 +3001,163 @@ view(const Arg *arg)
  pid_t
  winpid(Window w)
  {
@@ -6063,8 +6079,10 @@ index 9086e16..c773566 100644
 -            break;
 -        }
 -    }
-+	if (!r)
++	if (!r) {
++		free(e);
 +		return (pid_t)0;
++	}
 +
 +	xcb_res_client_id_value_iterator_t i = xcb_res_query_client_ids_ids_iterator(r);
 +	for (; i.rem; xcb_res_client_id_value_next(&i)) {
@@ -6272,7 +6290,7 @@ index 9086e16..c773566 100644
  }
  
  /* There's no way to check accesses to destroyed windows, thus those cases are
-@@ -2691,25 +3163,25 @@ wintomon(Window w)
+@@ -2691,25 +3166,25 @@ wintomon(Window w)
  int
  xerror(Display *dpy, XErrorEvent *ee)
  {
@@ -6312,7 +6330,7 @@ index 9086e16..c773566 100644
  }
  
  /* Startup Error handler to check if another window manager
-@@ -2717,107 +3189,103 @@ xerrordummy(Display *dpy, XErrorEvent *ee)
+@@ -2717,107 +3192,103 @@ xerrordummy(Display *dpy, XErrorEvent *ee)
  int
  xerrorstart(Display *dpy, XErrorEvent *ee)
  {
