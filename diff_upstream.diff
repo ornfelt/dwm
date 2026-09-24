@@ -1,6 +1,6 @@
 diff --git a/.claude/skills/dwm-upstream-sync/SKILL.md b/.claude/skills/dwm-upstream-sync/SKILL.md
 new file mode 100644
-index 0000000..82533bb
+index 0000000..534e938
 --- /dev/null
 +++ b/.claude/skills/dwm-upstream-sync/SKILL.md
 @@ -0,0 +1,125 @@
@@ -29,7 +29,7 @@ index 0000000..82533bb
 +cd ~/.config/dwm
 +git remote get-url upstream 2>/dev/null || git remote add upstream https://git.suckless.org/dwm
 +git fetch upstream
-+git status --short   # must be clean before starting - otherwise stop and ask
++git status --short -- . ':(exclude).claude'   # must be clean before starting (.claude/ itself is ignored) - otherwise stop and ask
 +```
 +
 +## 2. Find where to start
