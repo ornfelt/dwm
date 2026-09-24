@@ -3013,8 +3013,10 @@ winpid(Window w)
 	xcb_res_query_client_ids_cookie_t c = xcb_res_query_client_ids(xcon, 1, &spec);
 	xcb_res_query_client_ids_reply_t *r = xcb_res_query_client_ids_reply(xcon, c, &e);
 
-	if (!r)
+	if (!r) {
+		free(e);
 		return (pid_t)0;
+	}
 
 	xcb_res_client_id_value_iterator_t i = xcb_res_query_client_ids_ids_iterator(r);
 	for (; i.rem; xcb_res_client_id_value_next(&i)) {
