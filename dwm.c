@@ -206,6 +206,7 @@ static Monitor *numtomon(int num);
 static void drawbar(Monitor *m);
 static void drawbars(void);
 static int drawstatusbar(Monitor *m, int bh, char* text);
+static const char *weathercolor(const char *s);
 static void expose(XEvent *e);
 static void focus(Client *c);
 static void focusin(XEvent *e);
@@ -897,16 +898,30 @@ numtomon(int num)
     return m;
 }
 
+/* Colour for the ^2^ weather block, from the temperature that follows the
+ * code in the status text (e.g. "+7°"): +20 and above is hot, below zero
+ * is cold */
+const char *
+weathercolor(const char *s)
+{
+    for (; *s && *s != '^' && (unsigned char)*s >= ' '; s++) {
+        if (*s == '+')
+            return atoi(s + 1) >= 20 ? col21 : col22;
+        if (*s == '-')
+            return col23;
+        if (*s >= '0' && *s <= '9')
+            break;
+    }
+    return col24;
+}
+
 int
 drawstatusbar(Monitor *m, int bh, char* stext)
 {
     int ret, i, w, x, len;
     short isCode = 0;
     char *text;
-    char *p;
-    FILE *ptr;
-    char ch;
-    int hotbool = 0;
+    char *p, *s;
 
     len = strlen(stext) + 1 ;
     if (!(text = (char*) malloc(sizeof(char)*len)))
@@ -965,37 +980,9 @@ drawstatusbar(Monitor *m, int bh, char* stext)
 
             while (text[++i] && text[i] != '^') {
                 if (text[i] == '2') {
-                    // Check if weather is hot or not
-                    ptr = fopen("/home/jonas/.local/share/weatherreport", "r");
-                    if (ptr == NULL) {
-                        drw_clr_create(drw, &drw->scheme[ColFg], col24);
-                        continue;
-                    }
-                    do{
-                        ch = fgetc(ptr);
-                        // Check if temp is above +20 (= hot)
-                        if (hotbool){
-                            if ((ch == '2' || ch == '3') && fgetc(ptr) <= '9'){
-                                drw_clr_create(drw, &drw->scheme[ColFg], col21);
-                                break;
-                            }else{
-                                drw_clr_create(drw, &drw->scheme[ColFg], col22);
-                                break;
-                            }
-                        }
-
-                        if (ch == '+'){
-                            hotbool = 1;
-                        }else if (ch == '-') {
-                            drw_clr_create(drw, &drw->scheme[ColFg], col23);
-                            break;
-                        }
-                        else{
-                            drw_clr_create(drw, &drw->scheme[ColFg], col24);
-                            break;
-                        }
-                    } while (ch != EOF);
-                    fclose(ptr);
+                    /* weather: colour by the temperature that follows */
+                    s = strchr(text + i, '^');
+                    drw_clr_create(drw, &drw->scheme[ColFg], weathercolor(s ? s + 1 : ""));
                 } else if (text[i] == '3') {
                     drw_clr_create(drw, &drw->scheme[ColFg], col3);
                 } else if (text[i] == '4') {
