@@ -1140,7 +1140,7 @@ focusnthmon(const Arg *arg)
     if ((m = numtomon(arg->i)) == selmon)
         return;
     unfocus(selmon->sel, 0);
-    XWarpPointer(dpy, None, m->barwin, 0, 0, 0, 0, m->mw / 2, m->mh / 2);
+    XWarpPointer(dpy, None, root, 0, 0, 0, 0, m->wx + m->ww / 2, m->wy + m->wh / 2);
     selmon = m;
     focus(NULL);
 }
@@ -1874,7 +1874,7 @@ sendmonview(Client *c, Monitor *m)
     c->tags = m->tagset[m->seltags]; /* assign tags of target monitor */
     attach(c);
     attachstack(c);
-    XWarpPointer(dpy, None, m->barwin, 0, 0, 0, 0, m->mw / 2, m->mh / 2);
+    XWarpPointer(dpy, None, root, 0, 0, 0, 0, m->wx + m->ww / 2, m->wy + m->wh / 2);
     arrange(m);
     focus(c);
     restack(m);
