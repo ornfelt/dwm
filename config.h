@@ -206,21 +206,21 @@ static const Key keys[] = {
         /* bind mod-shift-less: togglesticky */
         { MODKEY|ShiftMask,         XK_less,            togglesticky,       {0} },
         /* bind mod-less: setlayout spiral */
-        { MODKEY,                   XK_less,            setlayout,          {.v = &layouts[0]} }, /* Fibonacci spiral */
+        { MODKEY,                   XK_less,            setlayout,          {.v = &layouts[0]} },
         /* bind mod-s: setlayout bstack */
-        { MODKEY,                   XK_s,               setlayout,          {.v = &layouts[2]} }, /* centeredmaster */
+        { MODKEY,                   XK_s,               setlayout,          {.v = &layouts[2]} },
         /* bind mod-ctrl-t: setlayout tile */
-        { MODKEY|ControlMask,       XK_t,               setlayout,          {.v = &layouts[1]} }, /* tile */
+        { MODKEY|ControlMask,       XK_t,               setlayout,          {.v = &layouts[1]} },
         /* bind mod-ctrl-y: setlayout dwindle */
-        { MODKEY|ControlMask,       XK_y,               setlayout,          {.v = &layouts[3]} }, /* dwindle */
+        { MODKEY|ControlMask,       XK_y,               setlayout,          {.v = &layouts[3]} },
         /* bind mod-ctrl-u: setlayout deck */
-        { MODKEY|ControlMask,       XK_u,               setlayout,          {.v = &layouts[4]} }, /* bstack */
+        { MODKEY|ControlMask,       XK_u,               setlayout,          {.v = &layouts[4]} },
         /* bind mod-ctrl-i: setlayout monocle */
-        { MODKEY|ControlMask,       XK_i,               setlayout,          {.v = &layouts[5]} }, /* deck*/
+        { MODKEY|ControlMask,       XK_i,               setlayout,          {.v = &layouts[5]} },
         /* bind mod-ctrl-o: setlayout centeredmaster */
-        { MODKEY|ControlMask,       XK_o,               setlayout,          {.v = &layouts[6]} }, /* monocle */
+        { MODKEY|ControlMask,       XK_o,               setlayout,          {.v = &layouts[6]} },
         /* bind mod-ctrl-p: setlayout centeredfloatingmaster */
-        { MODKEY|ControlMask,       XK_p,               setlayout,          {.v = &layouts[7]} }, /* centeredfloatingmaster */
+        { MODKEY|ControlMask,       XK_p,               setlayout,          {.v = &layouts[7]} },
         /* bind mod-ctrl-aring: setlayout floating */
         { MODKEY|ControlMask,       XK_aring,           setlayout,          {.v = &layouts[8]} },
         /* bind mod-f: togglefullscr */
