@@ -451,8 +451,6 @@ static const Key keys[] = {
         /* { 0, XF86XK_TouchpadOn,                         spawn,              SHCMD("synclient TouchpadOff=0") }, */
 };
 
-#define STATUSBAR "dwmblocks"
-
 /* button definitions */
 /* click can be ClkTagBar, ClkLtSymbol, ClkStatusText, ClkClientWin, or ClkRootWin */
 static const Button buttons[] = {
