@@ -330,8 +330,8 @@ static const Key keys[] = {
         { MODKEY|ControlMask,       XK_c,               spawn,              SHCMD("yad --calendar --no-buttons") },
         /* bind mod-b: spawn htop */
         { MODKEY,                   XK_b,               spawn,              SHCMD(TERMINAL " -e htop") },
-        /* bind mod-shift-b: spawn bashtop */
-        { MODKEY|ShiftMask,         XK_b,               spawn,              SHCMD(TERMINAL " -e bashtop") },
+        /* bind mod-shift-b: spawn btop */
+        { MODKEY|ShiftMask,         XK_b,               spawn,              SHCMD(TERMINAL " -e btop") },
         /* bind mod-ctrl-b: spawn ytop */
         { MODKEY|ControlMask,       XK_b,               spawn,              SHCMD(TERMINAL " -e ytop") },
         /* bind mod-p: spawn xrandr_helper.sh */
