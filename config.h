@@ -320,8 +320,8 @@ static const Key keys[] = {
         { MODKEY|ShiftMask,         XK_c,               spawn,              SHCMD("~/.local/bin/my_scripts/code_helper.sh new " TERMINAL) },
         /* bind mod-shift-d: spawn code_helper.sh old */
         { MODKEY|ShiftMask,         XK_d,               spawn,              SHCMD("~/.local/bin/my_scripts/code_helper.sh old " TERMINAL) },
-        /* bind mod-g: spawn fzf_open.sh */
-        { MODKEY,                   XK_g,               spawn,              SHCMD("~/.local/bin/my_scripts/fzf_open.sh " TERMINAL)},
+        /* bind mod-g: spawn nvim_fzf.sh */
+        { MODKEY,                   XK_g,               spawn,              SHCMD("~/.local/bin/my_scripts/nvim_fzf.sh " TERMINAL)},
         /* bind mod-c: spawn term_calc.sh */
         { MODKEY,                   XK_c,               spawn,              SHCMD("~/.local/bin/my_scripts/term_calc.sh " TERMINAL) },
         /* bind mod-ctrl-c: spawn yad calendar */
