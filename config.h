@@ -236,6 +236,12 @@ static const Key keys[] = {
         { MODKEY,                   XK_y,               setmfact,           {.f = -0.05} },
         /* bind mod-o: setmfact +0.05 (grow master) */
         { MODKEY,                   XK_o,               setmfact,           {.f = +0.05} },
+        /* bind mod-alt-y: setcfact -0.25 (focused window shorter) */
+        { MODKEY|MODKEY1,           XK_y,               setcfact,           {.f = -0.25} },
+        /* bind mod-alt-o: setcfact +0.25 (focused window taller) */
+        { MODKEY|MODKEY1,           XK_o,               setcfact,           {.f = +0.25} },
+        /* bind mod-alt-x: setcfact 0 (focused window back to its default size) */
+        { MODKEY|MODKEY1,           XK_x,               setcfact,           {.f =  0.00} },
         /* bind mod-shift-u: incnmaster +1 */
         { MODKEY|ShiftMask,         XK_u,               incnmaster,         {.i = +1 } },
         /* bind mod-shift-i: incnmaster -1 */

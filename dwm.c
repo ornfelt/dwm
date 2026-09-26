@@ -253,6 +253,7 @@ static void setclientstate(Client *c, long state);
 static void setfocus(Client *c);
 static void setfullscreen(Client *c, int fullscreen);
 static void setsticky(Client *c, int sticky);
+static void setcfact(const Arg *arg);
 static void setlayout(const Arg *arg);
 static void setmfact(const Arg *arg);
 static void setup(void);
@@ -2003,6 +2004,26 @@ layoutmenu(const Arg *arg)
 	while (waitpid(-1, NULL, WNOHANG) > 0);
 	if (end != out && i >= 0 && i < n)
 		setlayout(&((Arg) { .v = &layouts[i] }));
+}
+
+/* cfacts: the focused window's weight in its area of the layout (its height
+ * in a column of tile, deck and centeredmaster, its width in bstack), 1.0 by
+ * default; arg->f 0 sets it back to 1.0 */
+void
+setcfact(const Arg *arg)
+{
+	float f;
+	Client *c = selmon->sel;
+
+	if (!arg || !c || !selmon->lt[selmon->sellt]->arrange)
+		return;
+	f = arg->f + c->cfact;
+	if (arg->f == 0.0)
+		f = 1.0;
+	else if (f < 0.25 || f > 4.0)
+		return;
+	c->cfact = f;
+	arrange(selmon);
 }
 
 void
