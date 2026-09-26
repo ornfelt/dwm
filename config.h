@@ -303,7 +303,7 @@ static const Key keys[] = {
         /* bind mod-shift-e: spawn sysmenu_awsm.sh */
         { MODKEY|ShiftMask,         XK_e,               spawn,              SHCMD("~/.local/bin/my_scripts/sysmenu_awsm.sh") },
         /* bind mod-shift-s: spawn screenshot to clipboard */
-        { MODKEY|ShiftMask,         XK_s,               spawn,              SHCMD("f=$(mktemp --suffix=.png) && maim -s -u \"$f\" && xclip -selection clipboard -t image/png -i \"$f\"; rm -f \"$f\"") },
+        { MODKEY|ShiftMask,         XK_s,               spawn,              SHCMD("~/.local/bin/my_scripts/win_screenshot_awsm.sh") },
         /* bind mod-ctrl-s: spawn tesseract_ocr.sh */
         { MODKEY|ControlMask,       XK_s,               spawn,              SHCMD("~/.local/bin/my_scripts/tesseract_ocr.sh") },
         /* bind mod-d: spawn rofi */
