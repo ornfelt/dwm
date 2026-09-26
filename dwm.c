@@ -273,6 +273,7 @@ static void tagnthmonview(const Arg *arg);
 static void togglebar(const Arg *arg);
 static void togglebars(const Arg *arg);
 static void togglefloating(const Arg *arg);
+static void togglelayoutalltags(const Arg *arg);
 static void togglescratch(const Arg *arg);
 static void togglesticky(const Arg *arg);
 static void togglefullscr(const Arg *arg);
@@ -351,6 +352,9 @@ static xcb_connection_t *xcon;
 
 /* compile-time check if all tags fit into an unsigned int bit array. */
 struct NumTags { char limitexceeded[LENGTH(tags) > 31 ? -1 : 1]; };
+
+/* the index in layouts[] of each tag's layout, used when !layoutalltags */
+static unsigned int taglayouts[LENGTH(tags)];
 
 /* function implementations */
 void
@@ -483,6 +487,14 @@ arrange(Monitor *m)
 void
 arrangemon(Monitor *m)
 {
+	unsigned int i;
+
+	/* a layout per tag: the one of the first viewed tag */
+	for (i = 0; !layoutalltags && running && i < LENGTH(tags); i++)
+		if (m->tagset[m->seltags] & 1 << i) {
+			m->lt[m->sellt] = &layouts[taglayouts[i]];
+			break;
+		}
 	strncpy(m->ltsymbol, m->lt[m->sellt]->symbol, sizeof m->ltsymbol);
 	if (m->lt[m->sellt]->arrange)
 		m->lt[m->sellt]->arrange(m);
@@ -1977,10 +1989,22 @@ layoutmenu(const Arg *arg)
 void
 setlayout(const Arg *arg)
 {
+	unsigned int i;
+	Monitor *m;
+
 	if (!arg || !arg->v || arg->v != selmon->lt[selmon->sellt])
 		selmon->sellt ^= 1;
 	if (arg && arg->v)
 		selmon->lt[selmon->sellt] = (Layout *)arg->v;
+	/* every tag and monitor takes it (layoutalltags), else the viewed tags */
+	for (i = 0; i < LENGTH(tags); i++)
+		if (layoutalltags || selmon->tagset[selmon->seltags] & 1 << i)
+			taglayouts[i] = selmon->lt[selmon->sellt] - layouts;
+	for (m = mons; layoutalltags && m; m = m->next)
+		if (m != selmon) {
+			m->lt[m->sellt] = selmon->lt[selmon->sellt];
+			arrange(m);
+		}
 	strncpy(selmon->ltsymbol, selmon->lt[selmon->sellt]->symbol, sizeof selmon->ltsymbol);
 	if (selmon->sel)
 		arrange(selmon);
@@ -2404,6 +2428,18 @@ togglefloating(const Arg *arg)
 	}
 
 	arrange(selmon);
+}
+
+/* Toggle between one layout for every tag and monitor and a layout per
+ * tag (layoutalltags) */
+void
+togglelayoutalltags(const Arg *arg)
+{
+	layoutalltags = !layoutalltags;
+	if (layoutalltags) /* every tag takes the current layout */
+		setlayout(&((Arg) { .v = selmon->lt[selmon->sellt] }));
+	spawn(&((Arg) { .v = (const char *[]){ "notify-send", "-t", "2000", "dwm",
+		layoutalltags ? "layout: all tags" : "layout: per tag", NULL } }));
 }
 
 void

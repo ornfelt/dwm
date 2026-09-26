@@ -96,6 +96,7 @@ static const Rule rules[] = {
 static float mfact     = 0.55; /* factor of master area size [0.05..0.95] */
 static int nmaster     = 1;    /* number of clients in master area */
 static int resizehints = 0;    /* 1 means respect size hints in tiled resizals */
+static int layoutalltags = 1;  /* 1: setlayout sets every tag's (and monitor's) layout, 0: each tag has its own */
 static const int lockfullscreen = 1; /* 1 will force focus on the fullscreen window */
 static const int refreshrate = 120;  /* refresh rate (per second) for client move/resize */
 
@@ -226,6 +227,8 @@ static const Key keys[] = {
         { MODKEY|ControlMask,       XK_aring,           setlayout,          {.v = &layouts[8]} },
         /* bind mod-r: layoutmenu (pick a layout from layout_menu.sh) */
         { MODKEY,                   XK_r,               layoutmenu,         {.v = layoutmenucmd} },
+        /* bind mod-shift-r: togglelayoutalltags (layouts for all tags / per tag) */
+        { MODKEY|ShiftMask,         XK_r,               togglelayoutalltags, {0} },
         /* bind mod-f: togglefullscr */
         { MODKEY,                   XK_f,               togglefullscr,      {0} },
         /* bind mod-space: togglefloating */
