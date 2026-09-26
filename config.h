@@ -104,6 +104,7 @@ static const int refreshrate = 120;  /* refresh rate (per second) for client mov
 static const Layout layouts[] = {
     /* symbol       arrange function */
     { "[Φ]",        spiral },                   /* Default: Fibonacci spiral */
+    /* { "[@]",        spiral }, */             /* the old symbol */
     { "[]=",        tile },                     /* Master on left, slaves on right */
     { "TTT",        bstack },                   /* Master on top, slaves on bottom */
     { "[\\]",       dwindle },                  /* Decreasing in size right and leftward */
