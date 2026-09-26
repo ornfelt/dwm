@@ -392,8 +392,6 @@ static const Key keys[] = {
 
         /* bind F1: spawn show_keys.sh dwm */
         { 0,                        XK_F1,              spawn,              SHCMD("~/.local/bin/my_scripts/show_keys.sh dwm " TERMINAL) },
-        /* bind shift-F1: spawn show_keys.sh vim */
-        { ShiftMask,                XK_F1,              spawn,              SHCMD("~/.local/bin/my_scripts/show_keys.sh vim " TERMINAL) },
         /* { MODKEY,                   XK_F2,              spawn,              SHCMD("tutorialvids") }, */
         /* { MODKEY,                   XK_F3,              spawn,              SHCMD("displayselect") }, */
         /* { MODKEY,                   XK_F4,              spawn,              SHCMD(TERMINAL " -e pulsemixer; kill -44 $(pidof dwmblocks)") }, */
