@@ -103,7 +103,7 @@ static const int refreshrate = 120;  /* refresh rate (per second) for client mov
 #include "vanitygaps.c"
 static const Layout layouts[] = {
     /* symbol       arrange function */
-    { "[φ]",        spiral },                   /* Default: Fibonacci spiral */
+    { "[Φ]",        spiral },                   /* Default: Fibonacci spiral */
     { "[]=",        tile },                     /* Master on left, slaves on right */
     { "TTT",        bstack },                   /* Master on top, slaves on bottom */
     { "[\\]",       dwindle },                  /* Decreasing in size right and leftward */
