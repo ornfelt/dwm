@@ -379,6 +379,12 @@ static const Key keys[] = {
         { MODKEY|ShiftMask,         XK_a,               spawn,              SHCMD("~/.local/bin/my_scripts/picom_trans.sh -5")},
         /* bind mod-ctrl-a: spawn picom_trans.sh +5 (increase transparency) */
         { MODKEY|ControlMask,       XK_a,               spawn,              SHCMD("~/.local/bin/my_scripts/picom_trans.sh +5")},
+        /* bind mod-alt-a: spawn picom_trans.sh --reset (all windows back to picom.conf) */
+        { MODKEY|MODKEY1,           XK_a,               spawn,              SHCMD("~/.local/bin/my_scripts/picom_trans.sh --reset")},
+        /* bind mod-alt-shift-a: spawn picom_trans.sh --all -5 (all windows more transparent) */
+        { MODKEY|MODKEY1|ShiftMask, XK_a,               spawn,              SHCMD("~/.local/bin/my_scripts/picom_trans.sh --all -5")},
+        /* bind mod-alt-ctrl-a: spawn picom_trans.sh --all +5 (all windows more opaque) */
+        { MODKEY|MODKEY1|ControlMask, XK_a,              spawn,              SHCMD("~/.local/bin/my_scripts/picom_trans.sh --all +5")},
         /* bind mod-section: spawn loadEww.sh */
         { MODKEY,                   XK_section,         spawn,              SHCMD("~/.local/bin/my_scripts/loadEww.sh") },
         /* { MODKEY,                   XK_BackSpace,       spawn,              SHCMD("sysact") }, */
