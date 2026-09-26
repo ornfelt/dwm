@@ -261,6 +261,8 @@ static const Key keys[] = {
         /* { MODKEY,                   XK_Tab,             view,               {0} }, */
         /* bind mod-q: killclient */
         { MODKEY,                   XK_q,               killclient,         {0} },
+        /* bind mod-u: focusurgent (jump to urgent window) */
+        { MODKEY,                   XK_u,               focusurgent,        {0} },
         /* bind mod-shift-p: togglebars */
         { MODKEY|ShiftMask,         XK_p,               togglebars,          {0} },
         /* bind mod-ctrl-shift-p: togglebar */
