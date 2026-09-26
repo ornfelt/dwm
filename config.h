@@ -330,8 +330,8 @@ static const Key keys[] = {
         { MODKEY,                   XK_b,               spawn,              SHCMD(TERMINAL " -e htop") },
         /* bind mod-shift-b: spawn btop */
         { MODKEY|ShiftMask,         XK_b,               spawn,              SHCMD(TERMINAL " -e btop") },
-        /* bind mod-ctrl-b: spawn ytop */
-        { MODKEY|ControlMask,       XK_b,               spawn,              SHCMD(TERMINAL " -e ytop") },
+        /* bind mod-ctrl-b: spawn sudo btop */
+        { MODKEY|ControlMask,       XK_b,               spawn,              SHCMD(TERMINAL " -e sudo btop") },
         /* bind mod-p: spawn xrandr_helper.sh */
         { MODKEY,                   XK_p,               spawn,              SHCMD("~/.local/bin/my_scripts/xrandr_helper.sh") },
         /* bind mod-n: spawn files_wd.sh */
