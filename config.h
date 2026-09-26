@@ -300,8 +300,8 @@ static const Key keys[] = {
         { MODKEY,                   XK_w,               spawn,              SHCMD(TERMINAL " -e " FILEX " " "~/") },
         /* bind mod-e: spawn file_explorer_wd.sh */
         { MODKEY,                   XK_e,               spawn,              SHCMD("~/.local/bin/my_scripts/file_explorer_wd.sh " TERMINAL " " FILEX) },
-        /* bind mod-shift-e: spawn sysmenu_awsm.sh */
-        { MODKEY|ShiftMask,         XK_e,               spawn,              SHCMD("~/.local/bin/my_scripts/sysmenu_awsm.sh") },
+        /* bind mod-shift-e: spawn sysmenu.sh */
+        { MODKEY|ShiftMask,         XK_e,               spawn,              SHCMD("~/.local/bin/my_scripts/sysmenu.sh") },
         /* bind mod-shift-s: spawn screenshot to clipboard */
         { MODKEY|ShiftMask,         XK_s,               spawn,              SHCMD("~/.local/bin/my_scripts/win_screenshot_awsm.sh") },
         /* bind mod-ctrl-s: spawn tesseract_ocr.sh */
