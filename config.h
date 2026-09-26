@@ -375,10 +375,10 @@ static const Key keys[] = {
         { MODKEY,                   XK_period,          spawn,              SHCMD("~/.local/bin/my_scripts/emojipick/emojipick") },
         /* bind mod-a: spawn tmux_attach.sh */
         { MODKEY,                   XK_a,               spawn,              SHCMD("~/.local/bin/my_scripts/tmux_attach.sh " TERMINAL) },
-        /* bind mod-shift-a: spawn picom-trans -5 */
-        { MODKEY|ShiftMask,         XK_a,               spawn,              SHCMD("picom-trans -c -5")},
-        /* bind mod-ctrl-a: spawn picom-trans +5 */
-        { MODKEY|ControlMask,       XK_a,               spawn,              SHCMD("picom-trans -c +5")},
+        /* bind mod-shift-a: spawn picom_trans.sh -5 (decrease transparency) */
+        { MODKEY|ShiftMask,         XK_a,               spawn,              SHCMD("~/.local/bin/my_scripts/picom_trans.sh -5")},
+        /* bind mod-ctrl-a: spawn picom_trans.sh +5 (increase transparency) */
+        { MODKEY|ControlMask,       XK_a,               spawn,              SHCMD("~/.local/bin/my_scripts/picom_trans.sh +5")},
         /* bind mod-section: spawn loadEww.sh */
         { MODKEY,                   XK_section,         spawn,              SHCMD("~/.local/bin/my_scripts/loadEww.sh") },
         /* { MODKEY,                   XK_BackSpace,       spawn,              SHCMD("sysact") }, */

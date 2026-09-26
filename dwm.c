@@ -1188,8 +1188,10 @@ focusurgent(const Arg *arg)
 
 	for (m = mons; m && !c; m = m->next)
 		for (c = m->clients; c && !(c->isurgent && (c->tags & TAGBITS)); c = c->next);
-	if (!c)
+	if (!c) {
+		notifysend("urgent", "no urgent window");
 		return;
+	}
 	if (c->mon != selmon) {
 		unfocus(selmon->sel, 0);
 		selmon = c->mon;
@@ -2239,10 +2241,17 @@ sigstatusbar(const Arg *arg)
 	sigqueue(statuspid, SIGRTMIN+statussig, sv);
 }
 
+/* appended to sh -c commands: the shell exits 127 when the command isn't found */
+static const char notfoundcmd[] =
+	"\n[ $? -ne 127 ] || notify-send -u critical \"dwm: command not found\" \"$0\"";
+
 void
 spawn(const Arg *arg)
 {
 	struct sigaction sa;
+	char **argv = (char **)arg->v, *script;
+	char *shargv[] = { "/bin/sh", "-c", NULL, NULL, NULL };
+	int err;
 
 	if (arg->v == dmenucmd)
 		dmenumon[0] = '0' + selmon->num;
@@ -2256,8 +2265,22 @@ spawn(const Arg *arg)
 		sa.sa_handler = SIG_DFL;
 		sigaction(SIGCHLD, &sa, NULL);
 
-		execvp(((char **)arg->v)[0], (char **)arg->v);
-		die("dwm: execvp '%s' failed:", ((char **)arg->v)[0]);
+		/* sh -c commands (SHCMD) tell when the command isn't found; the
+		 * original command is $0, for the notification */
+		if (!strcmp(argv[0], "/bin/sh") && argv[1] && !strcmp(argv[1], "-c")
+		&& argv[2] && !argv[3]) {
+			script = ecalloc(strlen(argv[2]) + sizeof notfoundcmd, 1);
+			strcat(strcpy(script, argv[2]), notfoundcmd);
+			shargv[2] = script;
+			shargv[3] = argv[2];
+			argv = shargv;
+		}
+		execvp(argv[0], argv);
+		err = errno;
+		execlp("notify-send", "notify-send", "-u", "critical", err == ENOENT
+			? "dwm: command not found" : "dwm: can't run", argv[0], (char *)NULL);
+		errno = err;
+		die("dwm: execvp '%s' failed:", argv[0]);
 	}
 }
 
