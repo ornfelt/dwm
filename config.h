@@ -350,8 +350,8 @@ static const Key keys[] = {
         { MODKEY|ShiftMask,         XK_comma,           spawn,              SHCMD("~/.local/bin/my_scripts/suspend_awsm.sh")},
         /* bind mod-ctrl-comma: spawn suspend_mute.sh */
         { MODKEY|ControlMask,       XK_comma,           spawn,              SHCMD("~/.local/bin/my_scripts/alert_exit.sh && ~/.local/bin/my_scripts/suspend_mute.sh")},
-        /* bind mod-shift-period: spawn i3lock + suspend */
-        { MODKEY|ShiftMask,         XK_period,          spawn,              SHCMD("i3lock && ~/.local/bin/my_scripts/alert_exit.sh && systemctl suspend")},
+        /* bind mod-shift-period: spawn suspend_awsm_lock.sh (lock, mute, suspend) */
+        { MODKEY|ShiftMask,         XK_period,          spawn,              SHCMD("~/.local/bin/my_scripts/suspend_awsm_lock.sh")},
         /* bind mod-v: spawn clip_history.sh greenclip */
         { MODKEY,                   XK_v,               spawn,              SHCMD("~/.local/bin/my_scripts/clip_history.sh greenclip") },
         /* bind mod-shift-v: spawn qr_clip.sh */
