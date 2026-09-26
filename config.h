@@ -277,12 +277,12 @@ static const Key keys[] = {
         { MODKEY|ShiftMask,         XK_l,               tagmonview,         { .i = +1 } },
         /* bind mod-ctrl-l: tagmon +1 (move window to right monitor) */
         { MODKEY|ControlMask,       XK_l,               tagmon,             { .i = +1 } },
-        /* bind mod-left: focusmon -1 */
-        { MODKEY,                   XK_Left,            focusmon,           { .i = -1 } },
+        /* bind mod-left: shiftview -1 (view prev tag) */
+        { MODKEY,                   XK_Left,            shiftview,          { .i = -1 } },
         /* bind mod-shift-left: tagmon -1 */
         { MODKEY|ShiftMask,         XK_Left,            tagmon,             { .i = -1 } },
-        /* bind mod-right: focusmon +1 */
-        { MODKEY,                   XK_Right,           focusmon,           { .i = +1 } },
+        /* bind mod-right: shiftview +1 (view next tag) */
+        { MODKEY,                   XK_Right,           shiftview,          { .i = +1 } },
         /* bind mod-shift-right: tagmon +1 */
         { MODKEY|ShiftMask,         XK_Right,           tagmon,             { .i = +1 } },
         /* bind mod-apostrophe: togglescratch spterm */
