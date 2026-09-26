@@ -234,6 +234,7 @@ static void maprequest(XEvent *e);
 static void monocle(Monitor *m);
 static void movemouse(const Arg *arg);
 static Client *nexttiled(Client *c);
+static void notifysend(const char *tag, const char *msg);
 static void pop(Client *c);
 static void propertynotify(XEvent *e);
 static void pushstack(const Arg *arg);
@@ -1363,8 +1364,12 @@ grabkeys(void)
 void
 incnmaster(const Arg *arg)
 {
+	char msg[32];
+
 	selmon->nmaster = MAX(selmon->nmaster + arg->i, 0);
 	arrange(selmon);
+	snprintf(msg, sizeof msg, "master: %d", selmon->nmaster);
+	notifysend("nmaster", msg);
 }
 
 #ifdef XINERAMA
@@ -1582,6 +1587,18 @@ nexttiled(Client *c)
 {
 	for (; c && (c->isfloating || !ISVISIBLE(c)); c = c->next);
 	return c;
+}
+
+/* a notification (dunst); a new one replaces the last one with the same tag
+ * instead of stacking */
+void
+notifysend(const char *tag, const char *msg)
+{
+	char hint[64];
+
+	snprintf(hint, sizeof hint, "string:x-dunst-stack-tag:%s", tag);
+	spawn(&((Arg) { .v = (const char *[]){ "notify-send", "-t", "2000", "-h", hint,
+		"dwm", msg, NULL } }));
 }
 
 void
@@ -2438,8 +2455,7 @@ togglelayoutalltags(const Arg *arg)
 	layoutalltags = !layoutalltags;
 	if (layoutalltags) /* every tag takes the current layout */
 		setlayout(&((Arg) { .v = selmon->lt[selmon->sellt] }));
-	spawn(&((Arg) { .v = (const char *[]){ "notify-send", "-t", "2000", "dwm",
-		layoutalltags ? "layout: all tags" : "layout: per tag", NULL } }));
+	notifysend("layout", layoutalltags ? "layout: all tags" : "layout: per tag");
 }
 
 void
@@ -2455,6 +2471,7 @@ togglesticky(const Arg *arg)
 	if (!selmon->sel)
 		return;
 	setsticky(selmon->sel, !selmon->sel->issticky);
+	notifysend("sticky", selmon->sel->issticky ? "sticky: on" : "sticky: off");
 	arrange(selmon);
 }
 
