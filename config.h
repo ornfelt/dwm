@@ -300,8 +300,8 @@ static const Key keys[] = {
         { MODKEY,                   XK_w,               spawn,              SHCMD(TERMINAL " -e " FILEX " " "~/") },
         /* bind mod-e: spawn file_explorer_wd.sh */
         { MODKEY,                   XK_e,               spawn,              SHCMD("~/.local/bin/my_scripts/file_explorer_wd.sh " TERMINAL " " FILEX) },
-        /* bind mod-shift-e: spawn powermenu.sh */
-        { MODKEY|ShiftMask,         XK_e,               spawn,              SHCMD("~/.local/bin/my_scripts/alert_exit.sh && ~/.config/polybar/forest/scripts/powermenu.sh") },
+        /* bind mod-shift-e: spawn sysmenu_awsm.sh */
+        { MODKEY|ShiftMask,         XK_e,               spawn,              SHCMD("~/.local/bin/my_scripts/sysmenu_awsm.sh") },
         /* bind mod-shift-s: spawn screenshot to clipboard */
         { MODKEY|ShiftMask,         XK_s,               spawn,              SHCMD("f=$(mktemp --suffix=.png) && maim -s -u \"$f\" && xclip -selection clipboard -t image/png -i \"$f\"; rm -f \"$f\"") },
         /* bind mod-ctrl-s: spawn tesseract_ocr.sh */
