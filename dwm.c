@@ -199,6 +199,7 @@ static void configure(Client *c);
 static void configurenotify(XEvent *e);
 static void configurerequest(XEvent *e);
 static Monitor *createmon(void);
+static void cyclelayout(const Arg *arg);
 static void destroynotify(XEvent *e);
 static void detach(Client *c);
 static void detachstack(Client *c);
@@ -226,6 +227,7 @@ static void grabkeys(void);
 static void incnmaster(const Arg *arg);
 static void keypress(XEvent *e);
 static void killclient(const Arg *arg);
+static void layoutmenu(const Arg *arg);
 static void manage(Window w, XWindowAttributes *wa);
 static void mappingnotify(XEvent *e);
 static void maprequest(XEvent *e);
@@ -1927,6 +1929,49 @@ setsticky(Client *c, int sticky)
 		updatenetwmstate(c);
 		arrange(c->mon);
 	}
+}
+
+/* Set the layout arg->i places after the current one in layouts[],
+ * wrapping around (dwm's cyclelayouts patch) */
+void
+cyclelayout(const Arg *arg)
+{
+	int n = LENGTH(layouts) - 1, i; /* without the { NULL, NULL } end */
+
+	for (i = 0; i < n && &layouts[i] != selmon->lt[selmon->sellt]; i++);
+	if (i == n) /* not one of layouts[], e.g. fullscreen's: from the first */
+		i = 0;
+	setlayout(&((Arg) { .v = &layouts[((i + arg->i) % n + n) % n] }));
+}
+
+/* Run arg->v, a shell command that prints the index in layouts[] of the
+ * layout to set, with the current one's index in LAYOUT_MENU_CURRENT
+ * (dwm's layoutmenu patch). dwm waits for it to exit, like for a menu. */
+void
+layoutmenu(const Arg *arg)
+{
+	int n = LENGTH(layouts) - 1, i; /* without the { NULL, NULL } end */
+	char cmd[1024], out[16], *end = out;
+	struct sigaction sa, oldsa;
+	FILE *p;
+
+	for (i = 0; i < n && &layouts[i] != selmon->lt[selmon->sellt]; i++);
+	snprintf(cmd, sizeof cmd, "LAYOUT_MENU_CURRENT=%d %s", i == n ? 0 : i, (const char *)arg->v);
+	/* the command must not inherit dwm's ignored SIGCHLD */
+	sigemptyset(&sa.sa_mask);
+	sa.sa_flags = 0;
+	sa.sa_handler = SIG_DFL;
+	sigaction(SIGCHLD, &sa, &oldsa);
+	if ((p = popen(cmd, "r"))) {
+		if (fgets(out, sizeof out, p))
+			i = strtol(out, &end, 10);
+		pclose(p);
+	}
+	sigaction(SIGCHLD, &oldsa, NULL);
+	/* reap the children that exited meanwhile */
+	while (waitpid(-1, NULL, WNOHANG) > 0);
+	if (end != out && i >= 0 && i < n)
+		setlayout(&((Arg) { .v = &layouts[i] }));
 }
 
 void

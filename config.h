@@ -113,6 +113,9 @@ static const Layout layouts[] = {
     { "><>",        NULL },                     /* no layout function means floating behavior */
     { NULL,         NULL },
 };
+/* layoutmenu: prints the index of the chosen layout, takes layouts[]'s arrange
+ * function names in the same order */
+static const char layoutmenucmd[] = "~/.local/bin/my_scripts/layout_menu.sh spiral tile bstack dwindle deck monocle centeredmaster centeredfloatingmaster floating";
 
 /* key definitions */
 #define MODKEY Mod4Mask
@@ -221,6 +224,8 @@ static const Key keys[] = {
         { MODKEY|MODKEY1,           XK_p,               setlayout,          {.v = &layouts[7]} },
         /* bind mod-ctrl-aring: setlayout floating */
         { MODKEY|ControlMask,       XK_aring,           setlayout,          {.v = &layouts[8]} },
+        /* bind mod-r: layoutmenu (pick a layout from layout_menu.sh) */
+        { MODKEY,                   XK_r,               layoutmenu,         {.v = layoutmenucmd} },
         /* bind mod-f: togglefullscr */
         { MODKEY,                   XK_f,               togglefullscr,      {0} },
         /* bind mod-space: togglefloating */
@@ -469,6 +474,12 @@ static const Button buttons[] = {
     /* bind statustext-shift-button1: sigstatusbar 6 */
     { ClkStatusText,        ShiftMask,      Button1,        sigstatusbar,   {.i = 6} },
 #endif
+    /* bind ltsymbol-button1: layoutmenu (pick a layout from layout_menu.sh) */
+    { ClkLtSymbol,          0,              Button1,        layoutmenu,     {.v = layoutmenucmd} },
+    /* bind ltsymbol-button4: cyclelayout +1 (scroll up) */
+    { ClkLtSymbol,          0,              Button4,        cyclelayout,    {.i = +1} },
+    /* bind ltsymbol-button5: cyclelayout -1 (scroll down) */
+    { ClkLtSymbol,          0,              Button5,        cyclelayout,    {.i = -1} },
     /* bind statustext-shift-button3: spawn nvim dwmblocks config */
     { ClkStatusText,        ShiftMask,      Button3,        spawn,          SHCMD(TERMINAL " -e nvim ~/.config/dwmblocks/blocks.h") },
     /* bind clientwin-mod-button1: movemouse */
