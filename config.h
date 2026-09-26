@@ -182,8 +182,6 @@ static const Key keys[] = {
         /* bind mod-shift-ctrl-j: pushstack -1 (move window to bottom) */
         /* bind mod-shift-ctrl-k: pushstack 0 (move window to top) */
         STACKKEYS(MODKEY|ShiftMask,                     push)
-        /* bind mod-grave: spawn dmenu_run */
-        { MODKEY,                   XK_grave,           spawn,              SHCMD("dmenu_run -fn 'Linux Libertine Mono'") },
         /* bind mod-[1-9]: view tag [0-8] */
         /* bind mod-ctrl-[1-9]: tag window to [0-8] */
         /* bind mod-shift-[1-9]: tagview [0-8] */
