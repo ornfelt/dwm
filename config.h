@@ -308,12 +308,8 @@ static const Key keys[] = {
         { MODKEY|ShiftMask,         XK_s,               spawn,              SHCMD("~/.local/bin/my_scripts/win_screenshot_awsm.sh") },
         /* bind mod-ctrl-s: spawn tesseract_ocr.sh */
         { MODKEY|ControlMask,       XK_s,               spawn,              SHCMD("~/.local/bin/my_scripts/tesseract_ocr.sh") },
-        /* bind mod-d: spawn rofi */
-        { MODKEY,                   XK_d,               spawn,              SHCMD("rofi -show run -theme ~/.config/rofi/themes/gruvbox/gruvbox-dark.rasi") },
-        /* bind mod-r: spawn dmenu_run */
-        { MODKEY,                   XK_r,               spawn,              SHCMD("dmenu_run -i -l 20") },
-        /* bind mod-shift-r: spawn rofi launcher */
-        { MODKEY|ShiftMask,         XK_r,               spawn,              SHCMD("rofi -show run -theme ~/.config/polybar/forest/scripts/rofi/launcher.rasi") },
+        /* bind mod-d: spawn launcher.sh (dmenu, or rofi with LAUNCHER=rofi) */
+        { MODKEY,                   XK_d,               spawn,              SHCMD("~/.local/bin/my_scripts/launcher.sh") },
         /* bind mod-t: spawn script_copy.sh */
         { MODKEY,                   XK_t,               spawn,              SHCMD("~/.local/bin/my_scripts/script_copy.sh") },
         /* bind mod-shift-t: spawn script_helper.sh */
