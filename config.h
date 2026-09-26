@@ -217,8 +217,8 @@ static const Key keys[] = {
         { MODKEY|ControlMask,       XK_i,               setlayout,          {.v = &layouts[5]} },
         /* bind mod-ctrl-o: setlayout centeredmaster */
         { MODKEY|ControlMask,       XK_o,               setlayout,          {.v = &layouts[6]} },
-        /* bind mod-ctrl-p: setlayout centeredfloatingmaster */
-        { MODKEY|ControlMask,       XK_p,               setlayout,          {.v = &layouts[7]} },
+        /* bind mod-alt-p: setlayout centeredfloatingmaster */
+        { MODKEY|MODKEY1,           XK_p,               setlayout,          {.v = &layouts[7]} },
         /* bind mod-ctrl-aring: setlayout floating */
         { MODKEY|ControlMask,       XK_aring,           setlayout,          {.v = &layouts[8]} },
         /* bind mod-f: togglefullscr */
